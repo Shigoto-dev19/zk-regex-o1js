@@ -1,10 +1,24 @@
-type NodeTypeTrial = { 
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+
+export { 
+  parseRegex,
+  regexToNfa,
+  State,
+}
+
+type Node = { 
   begin: number;
   end: number;
   type?: string;
   text?: string;
-  parts?: NodeTypeTrial[];
-  sub?: NodeTypeTrial;
+  parts?: Node[];
+  sub?: Node;
+}
+
+type State = { 
+  type: string;
+  edges: [string, State][];
+  id?: number;
 }
 
 /**
@@ -28,16 +42,16 @@ type NodeTypeTrial = {
  *
  * Edited from https://github.com/CyberZHG/toolbox/blob/gh-pages/js/lexical.js
  */
-export function parseRegex(text: string) {
-  function parseSub(text: string[], begin: number, end: number, first: boolean): string | NodeTypeTrial {
+function parseRegex(text: string) {
+  function parseSub(text: string[], begin: number, end: number, first: boolean): string | Node {
     let i: number,
       sub,
       last = 0,
-      node: NodeTypeTrial = { begin: begin, end: end },
-      virNode: NodeTypeTrial,
-      tempNode: NodeTypeTrial,
+      node: Node = { begin: begin, end: end },
+      virNode: Node,
+      tempNode: Node,
       stack = 0,
-      parts: NodeTypeTrial[] = [];
+      parts: Node[] = [];
     if (text.length === 0) {
       return "Error: empty input at " + begin.toString() + ".";
     }
@@ -158,4 +172,76 @@ export function parseRegex(text: string) {
     }
   }
   return parseSub(new_text, 0, new_text.length, true);
+}
+
+/**
+ * Convert regular expression to nondeterministic finite automaton.
+ *
+ * @param {string} text @see parseRegex()
+ * @return {object|string}
+ */
+function regexToNfa(text: string) {
+  function generateGraph(node: Node, start: State, end: State, count: number) {
+    let i: number, 
+    last: State, 
+    temp: State, 
+    tempStart: State, 
+    tempEnd: State;
+
+    if (!Object.prototype.hasOwnProperty.call(start, "id")) {
+      start.id = count;
+      count += 1;
+    }
+    switch (node.type) {
+      case "empty":
+        start.edges.push(["ϵ", end]);
+        break;
+      case "text":
+        start.edges.push([node.text!, end]);
+        break;
+      case "cat":
+        last = start;
+        for (i = 0; i < node.parts!.length - 1; i += 1) {
+          temp = { type: "", edges: [] };
+          count = generateGraph(node.parts![i], last, temp, count);
+          last = temp;
+        }
+        count = generateGraph(node.parts![node.parts!.length - 1], last, end, count);
+        break;
+      case "or":
+        for (i = 0; i < node.parts!.length; i += 1) {
+          tempStart = { type: "", edges: [] };
+          tempEnd = { type: "", edges: [["ϵ", end]] };
+          start.edges.push(["ϵ", tempStart]);
+          count = generateGraph(node.parts![i], tempStart, tempEnd, count);
+        }
+        break;
+      case "star":
+        tempStart = { type: "", edges: [] };
+        tempEnd = {
+          type: "",
+          edges: [
+            ["ϵ", tempStart],
+            ["ϵ", end],
+          ],
+        };
+        start.edges.push(["ϵ", tempStart]);
+        start.edges.push(["ϵ", end]);
+        count = generateGraph(node.sub!, tempStart, tempEnd, count);
+        break;
+    }
+    if (!Object.prototype.hasOwnProperty.call(end, "id")) {
+      end.id = count;
+      count += 1;
+    }
+    return count;
+  }
+  let ast = parseRegex(text),
+    start = { type: "start", edges: [] },
+    accept = { type: "accept", edges: [] };
+  if (typeof ast === "string") {
+    return ast;
+  }
+  generateGraph(ast, start, accept, 0);
+  return start;
 }
