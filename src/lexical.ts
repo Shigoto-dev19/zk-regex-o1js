@@ -4,6 +4,7 @@ export {
   parseRegex,
   regexToNfa,
   State,
+  nfaToDfa,
 }
 
 type Node = { 
@@ -19,6 +20,16 @@ type State = {
   type: string;
   edges: [string, State][];
   id?: number;
+}
+
+type Closure = { 
+  key?: string; 
+  items: State[]; 
+  symbols?: string[]; 
+  type?: string; 
+  edges?: [string, Closure][]; 
+  id?: string;
+  trans?: Record<string, Closure>; 
 }
 
 /**
@@ -178,7 +189,7 @@ function parseRegex(text: string) {
  * Convert regular expression to nondeterministic finite automaton.
  *
  * @param {string} text @see parseRegex()
- * @return {object|string}
+ * @return {State|string}
  */
 function regexToNfa(text: string) {
   function generateGraph(node: Node, start: State, end: State, count: number) {
@@ -237,11 +248,121 @@ function regexToNfa(text: string) {
     return count;
   }
   let ast = parseRegex(text),
-    start = { type: "start", edges: [] },
-    accept = { type: "accept", edges: [] };
+    start: State = { type: "start", edges: [] },
+    accept: State = { type: "accept", edges: [] };
   if (typeof ast === "string") {
     return ast;
   }
   generateGraph(ast, start, accept, 0);
   return start;
+}
+
+/**
+ * Convert nondeterministic finite automaton to deterministic finite automaton.
+ *
+ * @param {State} nfa @see regexToNfa(), the function assumes that the given NFA is valid.
+ * @return {Closure} dfa Returns the first element of the DFA.
+ */
+function nfaToDfa(nfa: State): Closure {
+  function getClosure(nodes: State[]): Closure {
+    let closure: State[] = [],
+      stack: State[] = [],
+      symbols: string[] = [],
+      type = "",
+      top: State;
+    for (let i = 0; i < nodes.length; i += 1) {
+      stack.push(nodes[i]);
+      closure.push(nodes[i]);
+      if (nodes[i].type === "accept") {
+        type = "accept";
+      }
+    }
+    while (stack.length > 0) {
+      top = stack.pop()!;
+      // If top is of type string and starts with "Error" then return error
+      if (typeof top === "string" && top[0] === "E") {
+        console.log(top);
+        continue;
+      }
+      for (i = 0; i < top.edges.length; i += 1) {
+        if (top.edges[i][0] === "ϵ") {
+          if (closure.indexOf(top.edges[i][1]) < 0) {
+            stack.push(top.edges[i][1]);
+            closure.push(top.edges[i][1]);
+            if (top.edges[i][1].type === "accept") {
+              type = "accept";
+            }
+          }
+        } else {
+          if (symbols.indexOf(top.edges[i][0]) < 0) {
+            symbols.push(top.edges[i][0]);
+          }
+        }
+      }
+    }
+    closure.sort((a: State, b: State) =>  a.id! - b.id!);
+    symbols.sort();
+    return {
+      key: closure
+        .map((x) => x.id)
+        .join(","),
+      items: closure,
+      symbols: symbols,
+      type: type,
+      edges: [],
+      trans: {},
+    };
+  }
+  function getClosedMove(closure: Closure, symbol: string) {
+    let node,
+        nexts = [];
+    for (let i = 0; i < closure.items.length; i += 1) {
+      node = closure.items[i];
+      for (let j = 0; j < node.edges.length; j += 1) {
+        if (symbol === node.edges[j][0]) {
+          if (nexts.indexOf(node.edges[j][1]) < 0) {
+            nexts.push(node.edges[j][1]);
+          }
+        }
+      }
+    }
+    return getClosure(nexts);
+  }
+  function toAlphaCount(n: number) {
+    let a = "A".charCodeAt(0),
+      z = "Z".charCodeAt(0),
+      len = z - a + 1,
+      s = "";
+    while (n >= 0) {
+      s = String.fromCharCode((n % len) + a) + s;
+      n = Math.floor(n / len) - 1;
+    }
+    return s;
+  }
+  let i,
+    first = getClosure([nfa]),
+    states: Record<string, Closure> = {},
+    front = 0,
+    top: Closure,
+    closure: Closure,
+    queue = [first],
+    count = 0;
+  first.id = toAlphaCount(count);
+  states[first.key!] = first;
+  while (front < queue.length) {
+    top = queue[front];
+    front += 1;
+    for (i = 0; i < top.symbols!.length; i += 1) {
+      closure = getClosedMove(top, top.symbols![i]);
+      if (!Object.prototype.hasOwnProperty.call(states, closure.key!)) {
+        count += 1;
+        closure.id = toAlphaCount(count);
+        states[closure.key!] = closure;
+        queue.push(closure);
+      }
+      top.trans![top.symbols![i]] = states[closure.key!];
+      top.edges!.push([top.symbols![i], states[closure.key!]]);
+    }
+  }
+  return first;
 }
