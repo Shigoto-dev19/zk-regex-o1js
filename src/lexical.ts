@@ -3,8 +3,9 @@
 export { 
   parseRegex,
   regexToNfa,
-  State,
   nfaToDfa,
+  minDfa,
+  State,
 }
 
 type Node = { 
@@ -17,19 +18,13 @@ type Node = {
 }
 
 type State = { 
-  type: string;
-  edges: [string, State][];
-  id?: number;
-}
-
-type Closure = { 
   key?: string; 
-  items: State[]; 
+  items?: State[]; 
   symbols?: string[]; 
   type?: string; 
-  edges?: [string, Closure][]; 
+  edges?: [string, State][]; 
   id?: string;
-  trans?: Record<string, Closure>; 
+  trans?: Record<string, State>; 
 }
 
 /**
@@ -200,15 +195,15 @@ function regexToNfa(text: string) {
     tempEnd: State;
 
     if (!Object.prototype.hasOwnProperty.call(start, "id")) {
-      start.id = count;
+      start.id = count.toString();
       count += 1;
     }
     switch (node.type) {
       case "empty":
-        start.edges.push(["ϵ", end]);
+        start.edges!.push(["ϵ", end]);
         break;
       case "text":
-        start.edges.push([node.text!, end]);
+        start.edges!.push([node.text!, end]);
         break;
       case "cat":
         last = start;
@@ -223,7 +218,7 @@ function regexToNfa(text: string) {
         for (i = 0; i < node.parts!.length; i += 1) {
           tempStart = { type: "", edges: [] };
           tempEnd = { type: "", edges: [["ϵ", end]] };
-          start.edges.push(["ϵ", tempStart]);
+          start.edges!.push(["ϵ", tempStart]);
           count = generateGraph(node.parts![i], tempStart, tempEnd, count);
         }
         break;
@@ -236,13 +231,13 @@ function regexToNfa(text: string) {
             ["ϵ", end],
           ],
         };
-        start.edges.push(["ϵ", tempStart]);
-        start.edges.push(["ϵ", end]);
+        start.edges!.push(["ϵ", tempStart]);
+        start.edges!.push(["ϵ", end]);
         count = generateGraph(node.sub!, tempStart, tempEnd, count);
         break;
     }
     if (!Object.prototype.hasOwnProperty.call(end, "id")) {
-      end.id = count;
+      end.id = count.toString();
       count += 1;
     }
     return count;
@@ -261,16 +256,17 @@ function regexToNfa(text: string) {
  * Convert nondeterministic finite automaton to deterministic finite automaton.
  *
  * @param {State} nfa @see regexToNfa(), the function assumes that the given NFA is valid.
- * @return {Closure} dfa Returns the first element of the DFA.
+ * @return {State} dfa Returns the first element of the DFA.
  */
-function nfaToDfa(nfa: State): Closure {
-  function getClosure(nodes: State[]): Closure {
-    let closure: State[] = [],
+function nfaToDfa(nfa: State): State {
+  function getClosure(nodes: State[]): State {
+    let i: number, 
+      closure: State[] = [],
       stack: State[] = [],
       symbols: string[] = [],
       type = "",
       top: State;
-    for (let i = 0; i < nodes.length; i += 1) {
+    for (i = 0; i < nodes.length; i += 1) {
       stack.push(nodes[i]);
       closure.push(nodes[i]);
       if (nodes[i].type === "accept") {
@@ -284,23 +280,23 @@ function nfaToDfa(nfa: State): Closure {
         console.log(top);
         continue;
       }
-      for (i = 0; i < top.edges.length; i += 1) {
-        if (top.edges[i][0] === "ϵ") {
-          if (closure.indexOf(top.edges[i][1]) < 0) {
-            stack.push(top.edges[i][1]);
-            closure.push(top.edges[i][1]);
-            if (top.edges[i][1].type === "accept") {
+      for (i = 0; i < top.edges!.length; i += 1) {
+        if (top.edges![i][0] === "ϵ") {
+          if (closure.indexOf(top.edges![i][1]) < 0) {
+            stack.push(top.edges![i][1]);
+            closure.push(top.edges![i][1]);
+            if (top.edges![i][1].type === "accept") {
               type = "accept";
             }
           }
         } else {
-          if (symbols.indexOf(top.edges[i][0]) < 0) {
-            symbols.push(top.edges[i][0]);
+          if (symbols.indexOf(top.edges![i][0]) < 0) {
+            symbols.push(top.edges![i][0]);
           }
         }
       }
     }
-    closure.sort((a: State, b: State) =>  a.id! - b.id!);
+    closure.sort((a: State, b: State) =>  Number(a.id)! - Number(b.id)!);
     symbols.sort();
     return {
       key: closure
@@ -313,15 +309,15 @@ function nfaToDfa(nfa: State): Closure {
       trans: {},
     };
   }
-  function getClosedMove(closure: Closure, symbol: string) {
-    let node,
-        nexts = [];
-    for (let i = 0; i < closure.items.length; i += 1) {
-      node = closure.items[i];
-      for (let j = 0; j < node.edges.length; j += 1) {
-        if (symbol === node.edges[j][0]) {
-          if (nexts.indexOf(node.edges[j][1]) < 0) {
-            nexts.push(node.edges[j][1]);
+  function getClosedMove(closure: State, symbol: string) {
+    let node: State,
+        nexts: State[] = [];
+    for (let i = 0; i < closure.items!.length; i += 1) {
+      node = closure.items![i];
+      for (let j = 0; j < node.edges!.length; j += 1) {
+        if (symbol === node.edges![j][0]) {
+          if (nexts.indexOf(node.edges![j][1]) < 0) {
+            nexts.push(node.edges![j][1]);
           }
         }
       }
@@ -341,10 +337,10 @@ function nfaToDfa(nfa: State): Closure {
   }
   let i,
     first = getClosure([nfa]),
-    states: Record<string, Closure> = {},
+    states: Record<string, State> = {},
     front = 0,
-    top: Closure,
-    closure: Closure,
+    top: State,
+    closure: State,
     queue = [first],
     count = 0;
   first.id = toAlphaCount(count);
@@ -365,4 +361,219 @@ function nfaToDfa(nfa: State): Closure {
     }
   }
   return first;
+}
+
+/**
+ * Convert the DFA to its minimum form using Hopcroft's algorithm.
+ *
+ * @param {State} dfa @see nfaToDfa(), the function assumes that the given DFA is valid.
+ * @return {State} dfa Returns the first element of the minimum DFA.
+ */
+function minDfa(dfa: State) {
+  function getReverseEdges(start: State): [string[], Record<string, State>, Record<string, Record<string, string[]>>] {
+    let i: number, 
+      top: State, 
+      symbol: string, 
+      next: State | undefined,
+      front = 0,
+      queue: State[] = [start],
+      visited: Record<string, boolean> = {},
+      symbols: Record<string, boolean> = {},   // The input alphabet
+      idMap: Record<string, State> = {},     // Map id to states
+      revEdges: Record<string, Record<string, string[]>> = {};  // Map id to the ids which connects to the id with an alphabet
+    visited[start.id!] = true;
+    while (front < queue.length) {
+      top = queue[front];
+      front += 1;
+      idMap[top.id!] = top;
+      for (i = 0; i < top.symbols!.length; i += 1) {
+        symbol = top.symbols![i];
+        if (!Object.prototype.hasOwnProperty.call(symbols, symbol)) {
+          symbols[symbol] = true;
+        }
+        next = top.trans![symbol];
+        if (next) {
+          if (!Object.prototype.hasOwnProperty.call(revEdges, next.id!)) {
+            revEdges[next.id!] = {};
+          }
+          if (!Object.prototype.hasOwnProperty.call(revEdges[next.id!], symbol)) {
+            revEdges[next.id!][symbol] = [];
+          }
+          revEdges[next.id!][symbol].push(top.id!);
+          if (!Object.prototype.hasOwnProperty.call(visited, next.id!)) {
+            visited[next.id!] = true;
+            queue.push(next);
+          }
+        }
+      }
+    }
+    return [Object.keys(symbols), idMap, revEdges];
+  }
+  function hopcroft(
+      symbols: string[], 
+      idMap: Record<string, State>, 
+      revEdges: Record<string, Record<string, string[]>>
+    ) {
+    let i: number, 
+      j: number,
+      k: number, 
+      keys: string[], 
+      key: string, 
+      key1: string, 
+      key2: string, 
+      top: string | string[], 
+      group1: string[], 
+      group2: string[], 
+      symbol: string, 
+      revGroup: Record<string, boolean>,
+      ids = Object.keys(idMap).sort(),
+      partitions: Record<string, string[]> = {},
+      front = 0,
+      queue: (string | null)[] = [],
+      visited: Record<string, number> = {};
+    group1 = [];
+    group2 = [];
+    for (i = 0; i < ids.length; i += 1) {
+      if (idMap[ids[i]].type === 'accept') {
+        group1.push(ids[i]);
+      } else {
+        group2.push(ids[i]);
+      }
+    }
+    key = group1.join(',');
+    partitions[key] = group1;
+    queue.push(key);
+    visited[key] = 0;
+    if (group2.length !== 0) {
+      key = group2.join(',');
+      partitions[key] = group2;
+      queue.push(key);
+    }
+    while (front < queue.length) {
+      top = queue[front] as string;
+      front += 1;
+      if (top) {
+        top = top.split(',');
+        for (i = 0; i < symbols.length; i += 1) {
+          symbol = symbols[i];
+          revGroup = {};
+          for (j = 0; j < top.length; j += 1) {
+            if (Object.prototype.hasOwnProperty.call(revEdges, top[j]) && Object.prototype.hasOwnProperty.call(revEdges[top[j]], symbol)) {
+              for (k = 0; k < revEdges[top[j]][symbol].length; k += 1) {
+                revGroup[revEdges[top[j]][symbol][k]] = true;
+              }
+            }
+          }
+          keys = Object.keys(partitions);
+          for (j = 0; j < keys.length; j += 1) {
+            key = keys[j];
+            group1 = [];
+            group2 = [];
+            for (k = 0; k < partitions[key].length; k += 1) {
+              if (Object.prototype.hasOwnProperty.call(revGroup, partitions[key][k])) {
+                group1.push(partitions[key][k]);
+              } else {
+                group2.push(partitions[key][k]);
+              }
+            }
+            if (group1.length !== 0 && group2.length !== 0) {
+              delete partitions[key];
+              key1 = group1.join(',');
+              key2 = group2.join(',');
+              partitions[key1] = group1;
+              partitions[key2] = group2;
+              if (Object.prototype.hasOwnProperty.call(visited, key1)) {
+                queue[visited[key1]] = null;
+                visited[key1] = queue.length;
+                queue.push(key1);
+                visited[key2] = queue.length;
+                queue.push(key2);
+              } else if (group1.length <= group2.length) {
+                visited[key1] = queue.length;
+                queue.push(key1);
+              } else {
+                visited[key2] = queue.length;
+                queue.push(key2);
+              }
+            }
+          }
+        }
+      }
+    }
+    return Object.values(partitions);
+  }
+  function buildMinNfa(
+    start: State, 
+    partitions: string[][], 
+    idMap: Record<string, State>, 
+    revEdges: Record<string, Record<string, string[]>>
+    ) {
+    let i: number, 
+      j: number, 
+      temp: string[], 
+      node: State, 
+      symbol: string,
+      nodes: State[] = [],
+      group: Record<string, number> = {},
+      edges: Record<string, Record<string, Record<string, boolean>>> = {};
+    partitions.sort((a, b) => {
+      let ka = a.join(','), kb = b.join(',');
+      if (ka < kb) return -1;
+      if (ka > kb) return 1;
+      return 0;
+    });
+    for (i = 0; i < partitions.length; i += 1) {
+      if (partitions[i].indexOf(start.id!) >= 0) {
+        if (i > 0) {
+          temp = partitions[i];
+          partitions[i] = partitions[0];
+          partitions[0] = temp;
+        }
+        break;
+      }
+    }
+    for (i = 0; i < partitions.length; i += 1) {
+      node = {
+        id: (i + 1).toString(),
+        key: partitions[i].join(','),
+        items: [],
+        symbols: [],
+        type: idMap[partitions[i][0]].type,
+        edges: [],
+        trans: {},
+      };
+      for (j = 0; j < partitions[i].length; j += 1) {
+        node.items!.push(idMap[partitions[i][j]]);
+        group[partitions[i][j]] = i;
+      }
+      edges[i] = {};
+      nodes.push(node);
+    }
+    Object.keys(revEdges).forEach((to) => {
+      Object.keys(revEdges[to]).forEach((symbol) => {
+        revEdges[to][symbol].forEach((from) => {
+          if (!Object.prototype.hasOwnProperty.call(edges[group[from]], group[to])) {
+            edges[group[from]][group[to]] = {};
+          }
+          edges[group[from]][group[to]][symbol] = true;
+        });
+      });
+    });
+    Object.keys(edges).forEach((from) => {
+      Object.keys(edges[from]).forEach((to) => {
+        symbol = Object.keys(edges[from][to]).sort().join(',');
+        nodes[parseInt(from)].symbols!.push(symbol);
+        nodes[parseInt(from)].edges!.push([symbol, nodes[parseInt(to)]]);
+        nodes[parseInt(from)].trans![symbol] = nodes[parseInt(to)];
+      });
+    });
+    return nodes[0];
+  }
+  let edgesTuple = getReverseEdges(dfa),
+    symbols = edgesTuple[0],
+    idMap = edgesTuple[1],
+    revEdges = edgesTuple[2],
+    partitions = hopcroft(symbols, idMap, revEdges);
+  
+  return buildMinNfa(dfa, partitions, idMap, revEdges);
 }
