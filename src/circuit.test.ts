@@ -1,7 +1,7 @@
 //TODO Add MINA string regex test example
 
-import { Field, Bool, Provable } from 'o1js';
-import { simpleRegex } from './examples';
+import { Field } from 'o1js';
+import { emailRegex, simpleRegex } from './examples';
 
 //TODO use `Bytes.fromString(input).toFields()` instead
 function padString(str: string, paddedBytesSize?: number): Field[] {
@@ -17,167 +17,276 @@ function padString(str: string, paddedBytesSize?: number): Field[] {
     return paddedBytes.map(Field);
 }
 
+// 1=(a|b) (2=(b|c)+ )+d
 describe("Simple Regex", () => {
-  it("case 1", async () => {
+  it("should accept valid input: case 1", async () => {
     const input = "1=a 2=b d";
     const paddedStr = padString(input, 64);
 
     const isValid = simpleRegex(paddedStr);
-    Provable.log('witness: ', isValid);
-    expect(isValid).toEqual(Bool(true));
-    // const revealedIdx = [[2], [6], [8]];
-    // for (let substr_idx = 0; substr_idx < 3; ++substr_idx) {
-    //   for (let idx = 0; idx < 64; ++idx) {
-    //     if (revealedIdx[substr_idx].includes(idx)) {
-    //       expect(BigInt(paddedStr[idx])).toEqual(
-    //         witness[2 + 64 * substr_idx + idx]
-    //       );
-    //     } else {
-    //       expect(0n).toEqual(witness[2 + 64 * substr_idx + idx]);
-    //     }
-    //   }
-    // }
+    expect(isValid).toEqual(Field(1));
   });
 
-  it("case 2", async () => {
+  it("should accept valid input: case 2", async () => {
     const input = "1=a 2=b 2=bc 2=c d";
     const paddedStr = padString(input, 64);
    
     const isValid = simpleRegex(paddedStr);
-
-    expect(isValid).toEqual(Bool(true));
-
-    // for (let substr_idx = 0; substr_idx < 3; ++substr_idx) {
-    //   for (let idx = 0; idx < 64; ++idx) {
-    //     if (revealedIdx[substr_idx].includes(idx)) {
-    //       expect(BigInt(paddedStr[idx])).toEqual(
-    //         witness[2 + 64 * substr_idx + idx]
-    //       );
-    //     } else {
-    //       expect(0n).toEqual(witness[2 + 64 * substr_idx + idx]);
-    //     }
-    //   }
-    // }
+    expect(isValid).toEqual(Field(1));
   });
 
-  it("case 3", async () => {
+  it("should accept valid input: case 3", async () => {
     const input = "1=b 2=c d";
     const paddedStr = padString(input, 64);
     
     const isValid = simpleRegex(paddedStr);
-    expect(isValid).toEqual(Bool(true));
-
-    // const revealedIdx = [
-    //   [2, 22],
-    //   [6, 10, 11, 15, 26, 27, 31, 35],
-    //   [17, 37],
-    // ];
-    // for (let substr_idx = 0; substr_idx < 3; ++substr_idx) {
-    //   for (let idx = 0; idx < 64; ++idx) {
-    //     if (revealedIdx[substr_idx].includes(idx)) {
-    //       expect(BigInt(paddedStr[idx])).toEqual(
-    //         witness[2 + 64 * substr_idx + idx]
-    //       );
-    //     } else {
-    //       expect(0n).toEqual(witness[2 + 64 * substr_idx + idx]);
-    //     }
-    //   }
-    // }
+    expect(isValid).toEqual(Field(1));
   });
 
-  it("case 4", async () => {
+  it("should accept valid input: case 4", async () => {
     const input = "1=a 2=b d";
     const paddedStr = padString(input);
     
     const isValid = simpleRegex(paddedStr);
-    expect(isValid).toEqual(Bool(true));
+    expect(isValid).toEqual(Field(1));
   });
 
-  it("case 5", async () => {
+  it("should accept valid input: case 5", async () => {
     const input = "1=b 2=bbccccc d";
     const paddedStr = padString(input);
     
     const isValid = simpleRegex(paddedStr);
-    expect(isValid).toEqual(Bool(true));
+    expect(isValid).toEqual(Field(1));
   });
 
-  it("case 6", async () => {
+  it("should accept valid input: case 6", async () => {
     const input = "1=b 2=c d";
     const paddedStr = padString(input);
     
     const isValid = simpleRegex(paddedStr);
-    expect(isValid).toEqual(Bool(true));
+    expect(isValid).toEqual(Field(1));
   });
 
-  it("case 7", async () => {
+  it("should accept valid input: case 7", async () => {
     const input = "1=b 2=bbccccc d";
     const paddedStr = padString(input);
     
     const isValid = simpleRegex(paddedStr);
-    expect(isValid).toEqual(Bool(true));
+    expect(isValid).toEqual(Field(1));
   });
 
-  it("unhappy case 1: missing required part '1='", async () => {
+  it("should reject invalid input: case 1: missing required part '1='", async () => {
     const input = "2=bc";
     const paddedStr = padString(input);
     
     const isValid = simpleRegex(paddedStr);
-    expect(isValid).toEqual(Bool(false));
+    expect(isValid).toEqual(Field(0))
   });
 
-  it("unhappy case 2: missing required part '2='", async () => {
+  it("should reject invalid input: case 2: missing required part '2='", async () => {
     const input = "1=a";
     const paddedStr = padString(input);
     
     const isValid = simpleRegex(paddedStr);
-    expect(isValid).toEqual(Bool(false));
+    expect(isValid).toEqual(Field(0))
   });
 
-  it("unhappy case 3: missing required final character 'd'", async () => {
+  it("should reject invalid input: case 3: missing required final character 'd'", async () => {
     const input = "1=a 2=bbbccc";
     const paddedStr = padString(input);
     
     const isValid = simpleRegex(paddedStr);
-    expect(isValid).toEqual(Bool(false));
+    expect(isValid).toEqual(Field(0))
   });
 
-  it("unhappy case 4: invalid character 'j' after '1='", async () => {
+  it("should reject invalid input: case 4: invalid character 'j' after '1='", async () => {
     const input = "1=j 2=bbcc d";
     const paddedStr = padString(input);
     
     const isValid = simpleRegex(paddedStr);
-    expect(isValid).toEqual(Bool(false));
+    expect(isValid).toEqual(Field(0))
   });
 
-  it("unhappy case 5: final character 'd' is attched to '2='", async () => {
+  it("should reject invalid input: case 5: final character 'd' is attched to '2='", async () => {
     const input = "1=a 2=bd";
     const paddedStr = padString(input);
     
     const isValid = simpleRegex(paddedStr);
-    expect(isValid).toEqual(Bool(false));
+    expect(isValid).toEqual(Field(0))
   });
 
-  it("unhappy case 6: invalid character 'k' after '2='", async () => {
+  it("should reject invalid input: case 6: invalid character 'k' after '2='", async () => {
     const input = "1=a 2=ck";
     const paddedStr = padString(input);
     
     const isValid = simpleRegex(paddedStr);
-    expect(isValid).toEqual(Bool(false));
+    expect(isValid).toEqual(Field(0))
   });
 
-  it("unhappy case 7: missing required character 'b' or 'c' after '2='", async () => {
+  it("should reject invalid input: case 7: missing required character 'b' or 'c' after '2='", async () => {
     const input = "1=a 2=fl";
     const paddedStr = padString(input);
     
     const isValid = simpleRegex(paddedStr);
-    expect(isValid).toEqual(Bool(false));
+    expect(isValid).toEqual(Field(0))
   });
 
-  it("unhappy case 8: invalid character 'f' after many characters 'c' after '2='", async () => {
+  it("should reject invalid input: case 8: invalid character 'f' after many characters 'c' after '2='", async () => {
     const input = "1=a 2=bbcccf d";
     const paddedStr = padString(input);
     
     const isValid = simpleRegex(paddedStr);
-    expect(isValid).toEqual(Bool(false));
+    expect(isValid).toEqual(Field(0))
+  });
+});
+
+// ([a-zA-Z0-9._%-=]+@[a-zA-Z0-9.-]+.[a-z])
+describe("Email Regex", () => {
+  describe('username', () => {
+    it("should accept valid input: username is alphabetic", () => {
+      const input = "marcoPollo@expertcodebolg.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+
+    it("should accept valid input: username is alphabetic lowercase", () => {
+      const input = "mina@blockchain.xyz";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+
+    it("should accept valid input: username is alphabetic uppercase", () => {
+      const input = "CONSTANT@input.zk";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+  
+    it("should accept valid input: username is alphanumeric", () => {
+      const input = "halo2Spartian@hotmail.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+  
+    it("should accept valid input: username is numeric", () => {
+      const input = "007@spy.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+    
+    it("should accept valid input: username contains .", () => {
+      const input = "hello.world@gmail.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+
+    it("should accept valid input: username contains _", () => {
+      const input = "hello_world@gmail.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+
+    it("should accept valid input: username contains %", () => {
+      const input = "hello%world@gmail.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+
+    it("should accept valid input: username contains -", () => {
+      const input = "shigoto-dev19@protonmail.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+  
+    it("should accept valid input: username contains =", () => {
+      const input = "hello=world@gmail.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+
+    it("should reject invalid input: missing username", () => {
+      const input = "@protonmail.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0))
+    });
+
+    it("should reject invalid input: username contains invalid character #", () => {
+      const input = "shigoto#@protonmail.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0))
+    });
+
+    it("should reject invalid input: username contains invalid character +", () => {
+      const input = "shigoto+@protonmail.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0))
+    });
+  });
+
+  describe('symbol', () => {
+    it('should accept valid input: symbol=@', () =>{
+      const input = "hello@world.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+
+    it('should reject invalid input: missing symbol', () =>{
+      const input = "helloworld.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0));
+    });
+
+    it('should reject invalid input: symbol=#', () =>{
+      const input = "hello#world.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0));
+    });
+
+    it('should reject invalid input: symbol=+', () =>{
+      const input = "hello+world.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0));
+    });
+
+    it('should reject invalid input: symbol=!', () =>{
+      const input = "hello!world.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0));
+    });
   });
 });
