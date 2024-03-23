@@ -149,7 +149,7 @@ lines.push("}");
 
 const declarations: string[] = [];
 
-declarations.push(`const num_bytes = input.length;`);
+declarations.push(`\tconst num_bytes = input.length;`);
 declarations.push(`let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);`);
 declarations.push("");
 
@@ -176,7 +176,12 @@ accept_lines.push("for (let i = 1; i <= num_bytes; i++) {");
 accept_lines.push(`\tfinal_state_sum[i] = final_state_sum[i-1].add(states[i][${accept_node}].toField());`);
 accept_lines.push("}");
 accept_lines.push("const out = final_state_sum[num_bytes];");
+accept_lines.push("\n\treturn out;")
 
 lines.push(...accept_lines);
-
-console.log(lines.join("\n"));
+export const functionString = 
+    "\n(input: Field[]) {\n" +
+    lines.join('\n\t') + 
+    "\n}";
+console.log(functionString);
+// console.log(lines.join("\n"));
