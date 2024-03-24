@@ -130,7 +130,7 @@ function parseRegex(text: string) {
           parts[parts.length - 1] = tempNode;
         } else if (text[i] === "?") {
           if (parts.length === 0) {
-            return "Error: unexpected + at " + (begin + i).toString() + ".";
+            return "Error: unexpected ? at " + (begin + i).toString() + ".";
           }
           virNode = { begin: parts[parts.length - 1].begin, end: parts[parts.length - 1].end + 1 };
           virNode.type = "empty";
@@ -143,7 +143,7 @@ function parseRegex(text: string) {
           tempNode = { begin: begin + i, end: begin + i + 1 };
           tempNode.type = "empty";
           parts.push(tempNode);
-        } else if (Array.isArray(text[i])) {
+        } else if (text[i].length == 2) {
           tempNode = { begin: begin + i, end: begin + i + 1 };
           tempNode.type = "text";
           tempNode.text = text[i][0];
@@ -170,7 +170,7 @@ function parseRegex(text: string) {
     if (text[i] === "\\") {
       const escapeMap: Record<string, string> = { n: "\n", r: "\r", t: "\t", v: "\v", f: "\f", "^": String.fromCharCode(128) };
       const char = text[i + 1];
-      new_text.push(escapeMap[char] || char);
+      new_text.push(escapeMap[char] || char.repeat(2));
       i += 2;
     } else {
       new_text.push(text[i]);
