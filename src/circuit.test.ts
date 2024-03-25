@@ -289,4 +289,176 @@ describe("Email Regex", () => {
       expect(isValid).toEqual(Field(0));
     });
   });
+
+  describe('mail server', () => {
+    it("should accept valid input: domain is alphabetic", () => {
+      const input = "hello@CoolWorld.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+
+    it("should accept valid input: domain is alphabetic lowercase", () => {
+      const input = "ninja@gaiden.xyz";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+
+    it("should accept valid input: domain is alphabetic uppercase", () => {
+      const input = "CONSTANT@INPUT.output";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+  
+    it("should accept valid input: domain is alphanumeric", () => {
+      const input = "Trojan@Horse7.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+  
+    it("should accept valid input: domain is numeric", () => {
+      const input = "spy@007.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+    
+    it("should accept valid input: domain contains .", () => {
+      const input = "hello@beautiful.WORLD.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+
+    it("should accept valid input: domain contains -", () => {
+      const input = "hello@cool-world.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+
+    it("should reject invalid input: missing mail server", () => {
+      const input = "shigoto-dev19@.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0))
+    });
+
+    it("should reject invalid input: domain contains invalid character %", () => {
+      const input = "hello@meine%liebe.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0));
+    });
+
+    it("should reject invalid input: domain contains invalid character _", () => {
+      const input = "shigoto-dev19@proton_mail.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0));
+    });
+  
+    it("should reject invalid input: domain contains invalid character =", () => {
+      const input = "hello@sevgili=dunya.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0));
+    });
+
+    it("should reject invalid input: domain contains invalid character #", () => {
+      const input = "shigoto@proto#nmail.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0))
+    });
+
+    it("should reject invalid input: domain contains invalid character +", () => {
+      const input = "shigoto@proton+mail.com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0))
+    });
+  });
+
+  describe('domain', () => {
+    it("should accept valid input: domain is alphabetic lowercase", () => {
+      const input = "hey@there.buddy";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(1));
+    });
+
+    it("should reject invalid input: missing .", () => {
+      const input = "shigoto-dev19@com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0))
+    });
+
+    it("should reject invalid input: missing domain", () => {
+      const input = "shigoto-dev19@.";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0))
+    });
+
+    it("should reject invalid input: domain is alphabetic uppercase", () => {
+      const input = "hola@atodos.COM";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0));
+    });
+  
+    it("should reject invalid input: domain is alphanumeric", () => {
+      const input = "Trojan@Horse7.6com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0));
+    });
+  
+    it("should reject invalid input: domain is numeric", () => {
+      const input = "spy@007.123";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0));
+    });
+    
+    it("should reject invalid input: domain contains invalid character $", () => {
+      const input = "hello@beautiful.WORLD.$com";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0));
+    });
+
+    it("should reject invalid input: domain contains invalid character %", () => {
+      const input = "hello@meine%liebe.com%";
+      const paddedStr = padString(input);
+      
+      const isValid = emailRegex(paddedStr);
+      expect(isValid).toEqual(Field(0));
+    });
+  });
 });
