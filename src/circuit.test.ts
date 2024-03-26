@@ -1,7 +1,11 @@
 //TODO Add MINA string regex test example
 
 import { Field } from 'o1js';
-import { emailRegex, simpleRegex } from './examples';
+import {
+  simpleRegex, 
+  emailRegex, 
+  base64Regex, 
+} from './examples';
 
 //TODO use `Bytes.fromString(input).toFields()` instead
 function padString(str: string, paddedBytesSize?: number): Field[] {
@@ -460,5 +464,128 @@ describe("Email Regex", () => {
       const isValid = emailRegex(paddedStr);
       expect(isValid).toEqual(Field(0));
     });
+  });
+});
+
+// ([a-zA-Z0-9]|\\+|/|=)
+describe("Base64 Regex", () => {
+  it("should accept valid input: alphabetic lowercase", () => {
+    const input = "jkjasldfjlskdf";
+    const paddedStr = padString(input);
+    
+    const isValid = base64Regex(paddedStr);
+    expect(isValid).toEqual(Field(input.length));
+  });
+
+  it("should accept valid input: alphabetic uppercase", () => {
+    const input = "KDSFASDFSD";
+    const paddedStr = padString(input);
+    
+    const isValid = base64Regex(paddedStr);
+    expect(isValid).toEqual(Field(input.length));
+  });
+
+  it("should accept valid input: alphabetic", () => {
+    const input = "dfsADAFSksFD";
+    const paddedStr = padString(input);
+    
+    const isValid = base64Regex(paddedStr);
+    expect(isValid).toEqual(Field(input.length));
+  });
+
+  it("should accept valid input: numeric", () => {
+    const input = "8928343242";
+    const paddedStr = padString(input);
+    
+    const isValid = base64Regex(paddedStr);
+    expect(isValid).toEqual(Field(input.length));
+  });
+
+  it("should accept valid input: alphanumeric", () => {
+    const input = "sdfAE23dFAc";
+    const paddedStr = padString(input);
+    
+    const isValid = base64Regex(paddedStr);
+    expect(isValid).toEqual(Field(input.length));
+  });
+
+  it("should accept valid input: alphanumeric with + character", () => {
+    const input = "12Qsa+SDFsds";
+    const paddedStr = padString(input);
+    
+    const isValid = base64Regex(paddedStr);
+    expect(isValid).toEqual(Field(input.length));
+  });
+
+  it("should accept valid input: alphanumeric with / character", () => {
+    const input = "Ad234dfED/sdfaZ";
+    const paddedStr = padString(input);
+    
+    const isValid = base64Regex(paddedStr);
+    expect(isValid).toEqual(Field(input.length));
+  });
+
+  it("should accept valid input: alphanumeric with = character", () => {
+    const input = "ywZJU124=jsfd3";
+    const paddedStr = padString(input);
+    
+    const isValid = base64Regex(paddedStr);
+    expect(isValid).toEqual(Field(input.length));
+  });
+
+  it("should accept valid BASE64 input: case1", () => {
+    const input = "M/Dsdf=QW+pD";
+    const paddedStr = padString(input);
+    
+    const isValid = base64Regex(paddedStr);
+    expect(isValid).toEqual(Field(input.length));
+  });
+
+  it("should accept valid BASE64 input: case2", () => {
+    const input = "F/zND+U2Nzg5MA==";
+    const paddedStr = padString(input);
+    
+    const isValid = base64Regex(paddedStr);
+    expect(isValid).toEqual(Field(input.length));
+  });
+
+  it("should accept valid BASE64 input: case3", () => {
+    const input = "5p2x5aW95YiW44Gv44CB44GC=/=+/+";
+    const paddedStr = padString(input);
+    
+    const isValid = base64Regex(paddedStr);
+    expect(isValid).toEqual(Field(input.length));
+  });
+
+  it("should reject invalid input: invalid character .", () => {
+    const input = "shigotoDev.12D";
+    const paddedStr = padString(input);
+    
+    const isValid = emailRegex(paddedStr);
+    expect(isValid).toEqual(Field(0))
+  });
+
+  it("should reject invalid input: invalid character $", () => {
+    const input = "59$FORpay2MEnt=";
+    const paddedStr = padString(input);
+    
+    const isValid = emailRegex(paddedStr);
+    expect(isValid).toEqual(Field(0))
+  });
+
+  it("should reject invalid input: invalid character >", () => {
+    const input = "sZW23sf=>s12/";
+    const paddedStr = padString(input);
+    
+    const isValid = emailRegex(paddedStr);
+    expect(isValid).toEqual(Field(0))
+  });
+
+  it("should reject invalid input: invalid character #", () => {
+    const input = "1AQX=/EWS#p94";
+    const paddedStr = padString(input);
+    
+    const isValid = emailRegex(paddedStr);
+    expect(isValid).toEqual(Field(0))
   });
 });
