@@ -3,7 +3,7 @@
 
 import { Bool, Field } from 'o1js';
 
-export { simpleRegex, emailRegex }
+export { simpleRegex, emailRegex, base64Regex }
 
 // 1=(a|b) (2=(b|c)+ )+d
 function simpleRegex(input: Field[]) {
@@ -240,5 +240,51 @@ function emailRegex(input: Field[]) {
         }
         const out = final_state_sum[num_bytes];
 
-        return Bool(out.value);
+        return out;
+}
+
+// ([a-zA-Z0-9]|\\+|/|=)
+function base64Regex(input: Field[]) {
+        const num_bytes = input.length;
+        let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);
+
+        for (let i = 0; i < num_bytes; i++) {
+                states[i][0] = Bool(true);
+        }
+        for (let i = 1; i < 2; i++) {
+                states[0][i] = Bool(false);
+        }
+
+        for (let i = 0; i < num_bytes; i++) {
+                const lt0 = Field(64).lessThan(input[i]);
+                const lt1 = input[i].lessThan(91);
+                const and0 = lt0.and(lt1)
+                const lt2 = Field(96).lessThan(input[i]);
+                const lt3 = input[i].lessThan(123);
+                const and1 = lt2.and(lt3);
+                const lt4 = Field(47).lessThan(input[i]);
+                const lt5 = input[i].lessThan(58);
+                const and2 = lt4.and(lt5);
+                const eq0 = input[i].equals(43);
+                const eq1 = input[i].equals(47);
+                const eq2 = input[i].equals(61);
+                let multi_or0 = Bool(false);
+                multi_or0 = multi_or0.or(and0);
+                multi_or0 = multi_or0.or(and1);
+                multi_or0 = multi_or0.or(and2);
+                multi_or0 = multi_or0.or(eq0);
+                multi_or0 = multi_or0.or(eq1);
+                multi_or0 = multi_or0.or(eq2);
+                const and3 = states[i][0].and(multi_or0);
+                states[i+1][1] = and3;
+        }
+
+        let final_state_sum: Field[] = [];
+        final_state_sum[0] = states[0][1].toField();
+        for (let i = 1; i <= num_bytes; i++) {
+                final_state_sum[i] = final_state_sum[i-1].add(states[i][1].toField());
+        }
+        const out = final_state_sum[num_bytes];
+
+        return out;
 }
