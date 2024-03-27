@@ -3,7 +3,7 @@
 
 import { Bool, Field } from 'o1js';
 
-export { simpleRegex, emailRegex, base64Regex }
+export { simpleRegex, emailRegex, base64Regex, minaRegex }
 
 // 1=(a|b) (2=(b|c)+ )+d
 function simpleRegex(input: Field[]) {
@@ -283,6 +283,67 @@ function base64Regex(input: Field[]) {
         final_state_sum[0] = states[0][1].toField();
         for (let i = 1; i <= num_bytes; i++) {
                 final_state_sum[i] = final_state_sum[i-1].add(states[i][1].toField());
+        }
+        const out = final_state_sum[num_bytes];
+
+        return out;
+}
+
+// (mina|MINA)+
+function minaRegex(input: Field[]) {
+        const num_bytes = input.length;
+        let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);
+
+        for (let i = 0; i < num_bytes; i++) {
+                states[i][0] = Bool(true);
+        }
+        for (let i = 1; i < 8; i++) {
+                states[0][i] = Bool(false);
+        }
+
+        for (let i = 0; i < num_bytes; i++) {
+                const eq0 = input[i].equals(77);
+                const and0 = states[i][0].and(eq0);
+                const eq1 = input[i].equals(77);
+                const and1 = states[i][7].and(eq1);
+                let multi_or0 = Bool(false);
+                multi_or0 = multi_or0.or(and0);
+                multi_or0 = multi_or0.or(and1);
+                states[i+1][1] = multi_or0;
+                const eq2 = input[i].equals(109);
+                const and2 = states[i][0].and(eq2);
+                const eq3 = input[i].equals(109);
+                const and3 = states[i][7].and(eq3);
+                let multi_or1 = Bool(false);
+                multi_or1 = multi_or1.or(and2);
+                multi_or1 = multi_or1.or(and3);
+                states[i+1][2] = multi_or1;
+                const eq4 = input[i].equals(73);
+                const and4 = states[i][1].and(eq4);
+                states[i+1][3] = and4;
+                const eq5 = input[i].equals(105);
+                const and5 = states[i][2].and(eq5);
+                states[i+1][4] = and5;
+                const eq6 = input[i].equals(78);
+                const and6 = states[i][3].and(eq6);
+                states[i+1][5] = and6;
+                const eq7 = input[i].equals(110);
+                const and7 = states[i][4].and(eq7);
+                states[i+1][6] = and7;
+                const eq8 = input[i].equals(65);
+                const and8 = states[i][5].and(eq8);
+                const eq9 = input[i].equals(97);
+                const and9 = states[i][6].and(eq9);
+                let multi_or2 = Bool(false);
+                multi_or2 = multi_or2.or(and8);
+                multi_or2 = multi_or2.or(and9);
+                states[i+1][7] = multi_or2;
+        }
+
+        let final_state_sum: Field[] = [];
+        final_state_sum[0] = states[0][7].toField();
+        for (let i = 1; i <= num_bytes; i++) {
+                final_state_sum[i] = final_state_sum[i-1].add(states[i][7].toField());
         }
         const out = final_state_sum[num_bytes];
 
