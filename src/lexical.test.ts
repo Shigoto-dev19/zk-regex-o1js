@@ -674,7 +674,6 @@ describe('Lexical', function () {
             let nfa = regexToNfa('(a|b)*'),
                 dfa = nfaToDfa(nfa as State),
                 minDfa = minimumDfa(dfa);
-            console.log('ts dfa: ', dfa);
             expect(minDfa.key).toEqual('A,B,C');
             expect(minDfa.edges!.length).toEqual(1);
             expect(minDfa.trans!['a,b'].key).toEqual('A,B,C');
