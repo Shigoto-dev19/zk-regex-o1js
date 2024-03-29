@@ -307,11 +307,3 @@ function generateMinDfaGraph(regex: string) {
 
   return JSON.stringify(graph);
 }
-
-
-// const regex = parseRawRegex('([a-zA-Z0-9]|\\+|/|=)');
-// console.log('nfa: ', regexToNfa(expected));
-// generateMinDfaGraph(regex);
-
-// const graphJson = JSON.parse(printGraphForRegex(regex));
-// console.log(graphJson);
