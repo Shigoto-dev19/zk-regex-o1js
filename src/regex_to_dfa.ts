@@ -1,38 +1,53 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-
-// import { STRING_PRESELECTOR } from "../src/helpers/constants.ts";
-import { minDfa, nfaToDfa, regexToNfa, State } from "./lexical.js";
+import { State, regexToNfa, nfaToDfa, minDfa } from "./lexical.js";
 
 export {
-  regexToMinDFASpec,
-  toNature,
-  test_regex, 
-  printGraphForRegex, 
-  RegexGraph,
+  parseRawRegex, 
+  generateMinDfaGraph, 
 }
 
-type NewState = { 
-    key?: string; 
-    items?: NewState[]; 
-    symbols?: string[]; 
-    type?: string; 
-    edges?: [string, NewState][]; 
-    id?: string;
-    trans?: Record<string, NewState>; 
-    nature?: number
-    natureEdges?: Record<string, number>
-  }
+type GraphState = { 
+  key?: string; 
+  items?: GraphState[]; 
+  symbols?: string[]; 
+  type?: string; 
+  edges?: [string, GraphState][]; 
+  id?: string;
+  trans?: Record<string, GraphState>; 
+  nature?: number
+  transition?: Record<string, number>
+}
 
-/** This section defines helper regex components -- to edit the regex used, edit the return
- * of the test_regex function.
- * All of the relevant regexes are in the main repo README.
- */
 
-// Helper components
-const a2z = "a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z";
-const A2Z = "A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z";
-const r0to9 = "0|1|2|3|4|5|6|7|8|9";
-const alphanum = `${a2z}|${A2Z}|${r0to9}`;
+/// Helper regex components: Contains constants can be used in your code for various purposes such as regex patterns and character validations.
+
+function barSeparated(input: string) {
+  return input.split('').join('|');
+}
+
+// Alphabetic characters (lowercase)
+const alphabeticLowercase = "abcdefghijklmnopqrstuvwxyz";
+
+// Alphabetic characters (uppercase)
+const alphabeticUppercase = alphabeticLowercase.toUpperCase();
+
+// Alphabetic characters (both lowercase and uppercase)
+const alphabetic = alphabeticLowercase + alphabeticUppercase;
+
+// Digits
+const digits = "0123456789";
+
+// Alphanumeric characters
+const alphanumeric = alphabetic + digits;
+
+// Word characters (alphabetic characters, digits, and underscore)
+const wordCharacters = alphanumeric + "_";
+
+const a2z = barSeparated(alphabeticLowercase);
+const A2Z = barSeparated(alphabeticUppercase);
+const r0to9 = barSeparated(digits);
+const alphanum = barSeparated(alphanumeric);
 
 const key_chars = `(${a2z})`;
 const catch_all =
@@ -43,76 +58,39 @@ const catch_all_without_semicolon =
 const email_chars = `${alphanum}|_|.|-`;
 const base_64 = `(${alphanum}|\\+|/|=)`;
 const word_char = `(${alphanum}|_)`;
+const email_address_regex = `([a-zA-Z0-9._%\\+-=]+@[a-zA-Z0-9.-]+)`;
 
-const a2z_nosep = "abcdefghijklmnopqrstuvwxyz";
-const A2Z_nosep = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const a2f_nosep = "abcdef";
-const A2F_nosep = "ABCDEF";
-const r0to9_nosep = "0123456789";
-
-// TODO: Note that this is replicated code in lexical.js as well
+// TODO: Note that this is replicated code in lexical.ts as well
 // Note that ^ has to be manually replaced with \x80 in the regex
 const escapeMap = { n: "\n", r: "\r", t: "\t", v: "\v", f: "\f" };
 let whitespace = Object.values(escapeMap);
 const slash_s = whitespace.join("|");
 
-// The test_regex function whose return needs to be edited
-// Note that in order to specify some strings in regex, we must use \\ to escape \'s.
-// For instance, matching the literal + is represented as \\+.
-// However, matching the literal \r (ascii 60) character is still \r
-// Matching \ then an r as two characters would be \\r in the js string literal
-function test_regex() {
-  // let to_from_regex_old = '(\r\n|\x80)(to|from):([A-Za-z0-9 _."@-]+<)?[a-zA-Z0-9_.-]+@[a-zA-Z0-9_.]+>?\r\n';
-  // let regex = `\r\ndkim-signature:(${key_chars}=${catch_all_without_semicolon}+; )+bh=${base_64}+; `;
-  // let order_invariant_regex_raw = `((\\n|\x80|^)(((from):([A-Za-z0-9 _."@-]+<)?[a-zA-Z0-9_.-]+@[a-zA-Z0-9_.]+>)?|(subject:[a-zA-Z 0-9]+)?|((to):([A-Za-z0-9 _."@-]+<)?[a-zA-Z0-9_.-]+@[a-zA-Z0-9_.]+>)?|(dkim-signature:((a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z)=(0|1|2|3|4|5|6|7|8|9|a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z|!|"|#|$|%|&|\'|\\(|\\)|\\*|\\+|,|-|.|/|:|<|=|>|\\?|@|[|\\\\|]|^|_|`|{|\\||}|~| |\t|\n|\r|\x0B|\f)+; ))?)(\\r))+` // Uses a-z syntax instead of | for each char
-  let email_address_regex = `([a-zA-Z0-9._%\\+-=]+@[a-zA-Z0-9.-]+)`;
+/**
+ * Parses the input raw regex into an expanded parsed form and displays the DFA.
+ * Note: In order to specify some strings in regex, use \\ to escape \\s.
+ * For instance, matching the literal + is represented as \\+, but \\r matches the literal \r character.
+ * Matching \\ then an r as two characters would be represented as \\r in the JS string literal.
+ * 
+ * @param {string} rawRegex The raw regex string to parse.
+ * @returns {string} The expanded parsed regex.
+ */
+function parseRawRegex(rawRegex: string) {
+  // console.log(format_regex_printable(rawRegex));
+  
+  // Bold blue color for console output
+  const BOLD_BLUE = "\x1b[34;1m";
+  
+  // Print input raw regex
+  console.log(BOLD_BLUE, 'INPUT RAW REGEX:\x1b[0m\n', rawRegex, '\n');
+  
+  // Parse the raw regex
+  const parsedRegex = regexToMinDFASpec(rawRegex);
+  
+  // Print input parsed regex
+  console.log(BOLD_BLUE, 'INPUT PARSED REGEX\x1b[0m\n', parsedRegex, '\n');
 
-  // ------- HEADER/SIGNATURE REGEX --------
-  let order_invariant_header_regex_raw = `(((\\n|^)(((from):([A-Za-z0-9 _."@-]+<)?[a-zA-Z0-9_.-]+@[a-zA-Z0-9_.]+>)?|(subject:[a-zA-Z 0-9]+)?|((to):([A-Za-z0-9 _."@-]+<)?[a-zA-Z0-9_.-]+@[a-zA-Z0-9_.]+>)?)(\\r))+)\\n`;
-  let sig_regex = `\r\ndkim-signature:(${key_chars}=${catch_all_without_semicolon}+; )+bh=${base_64}+; `;
-
-  // let full_header_regex = order_invariant_header_regex_raw + sig_regex;
-  // let raw_regex = order_invariant_header_regex_raw;
-  // let regex = regexToMinDFASpec(raw_regex) + sig_regex;
-  // console.log(format_regex_printable(sig_regex));
-
-  // -------- SUBJECT REGEXES --------
-  // This raw subject line (with \\ replaced with \) can be put into regexr.com to test new match strings and sanity check that it works
-  // TODO: Other valid chars in email addresses: #$%!^/&*, outlined at https://ladedu.com/valid-characters-for-email-addresses-the-complete-list/ and in the RFC
-
-  // -- SEND SPECIFIC REGEXES --
-  // let send_specific_raw_subject_regex = `((\r\n)|^)subject:[Ss]end (\$)?[0-9]+(.[0-9]+)? [a-zA-Z]+ to (${email_address_regex}|0x[0-9a-fA_F]+)\r\n`;
-  // let raw_subject_regex = `((\r\n)|^)subject:[a-zA-Z]+ (\\$)?[0-9]+(.[0-9]+)? [a-zA-Z]+ to (([a-zA-Z0-9._%\\+-=]+@[a-zA-Z0-9.-]+)|0x[0-9]+)\r\n`;
-  // Input: ((\\r\\n)|^)subject:[Ss]end (\$)?[0-9]+(.[0-9]+)? [a-zA-Z]+ to (([a-zA-Z0-9._%\+-=]+@[a-zA-Z0-9.-]+)|0x[0-9]+)\\r\\n
-  // This can be pasted into the first line of https://zkregex.com/min_dfa (after replacing \\ -> \)
-  // ((\\r\\n)|\^)subject:[Ss]end (\$)?[0-9]+(\.[0-9])? (ETH|DAI|USDC|eth|usdc|dai) to (([a-zA-Z0-9\._%\+-]+@[a-zA-Z0-9\.-]+.[a-zA-Z0-9]+)|0x[0-9]+)\\r\\n
-  // console.log(raw_subject_regex);
-
-  // -- GENERIC SUBJECT COMMANDS --
-  let raw_subject_regex = `((\r\n)|^)subject:[a-zA-Z]+ (\\$)?[0-9]+(.[0-9]+)? [a-zA-Z]+ to (${email_address_regex}|0x[0-9a-fA_F]+)\r\n`;
-
-  // -------- OTHER FIELD REGEXES --------
-  let raw_from_regex = `(\r\n|^)from:([A-Za-z0-9 _.,"@-]+)<[a-zA-Z0-9_.-]+@[a-zA-Z0-9_.-]+>\r\n`;
-  // let message_id_regex = `(\r\n|^)message-id:<[=@.\\+_-a-zA-Z0-9]+>\r\n`;
-
-  // -------- TWITTER BODY REGEX ---------
-  // let regex = STRING_PRESELECTOR + `${word_char}+`;
-
-  // ---------- DEPRECATAED REGEXES ----------
-  // let order_invariant_header_regex_raw = `(((\\n|^)(((from):([A-Za-z0-9 _."@-]+<)?[a-zA-Z0-9_.-]+@[a-zA-Z0-9_.]+>)?|(subject:[a-zA-Z 0-9]+)?|((to):([A-Za-z0-9 _."@-]+<)?[a-zA-Z0-9_.-]+@[a-zA-Z0-9_.]+>)?)(\\r))+)`;
-  // let order_invariant_full_regex_raw = `(dkim-signature:((a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z)=(0|1|2|3|4|5|6|7|8|9|a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z|!|"|#|$|%|&|\'|\\(|\\)|\\*|\\+|,|-|.|/|:|<|=|>|\\?|@|[|\\\\|]|^|_|\`|{|\\||}|~| |\t|\n|\r|\x0B|\f)+; ))?)(\\r))+` // Uses a-z syntax instead of | for each char
-  // let old_regex = '(\r\n|\x80)(to|from):([A-Za-z0-9 _."@-]+<)?[a-zA-Z0-9_.-]+@[a-zA-Z0-9_.]+>?\r\n';
-  // let regex = `(\n|^)(to|from):((${email_chars}|"|@| )+<)?(${email_chars})+@(${email_chars})+>?\r`;
-  // let regex = `(\r\n|^)(to|from):((${email_chars}|"|@| )+<)?(${email_chars})+@(${email_chars})+>?\r\n`;
-  // 'dkim-signature:((a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z)=(0|1|2|3|4|5|6|7|8|9|a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z|!|"|#|$|%|&|\'|\\(|\\)|\\*|\\+|,|-|.|/|:|<|=|>|\\?|@|[|\\\\|]|^|_|`|{|\\||}|~| |\t|\n|\r|\x0B|\f)+; )+bh=(a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z|0|1|2|3|4|5|6|7|8|9|\\+|/|=)+; '
-  // let regex = 'hello(0|1|2|3|4|5|6|7|8|9)+world';
-
-  // --------- FINAL CONVERSION ---------
-  //   console.log(format_regex_printable(raw_subject_regex));
-  let regex = regexToMinDFASpec(raw_subject_regex);
-  //   console.log(format_regex_printable(regex));
-
-  return regex;
+  return parsedRegex;
 }
 
 // Escapes and prints regexes (might be buggy)
@@ -134,24 +112,32 @@ function format_regex_printable(s: string) {
   //   let fixed = escaped.replaceAll("\\(", "(").replaceAll("\\)", ")").replaceAll("\\+", "+").replaceAll("\\*", "*").replaceAll("\\?", "?");
 }
 
-// Note that this is not complete and very case specific i.e. can only handle a-z and a-f, and not a-c.
-// This function expands [] sections to convert values for https://zkregex.com/min_dfa
-// The input is a regex with [] and special characters (i.e. the first line of min_dfa tool)
-// The output is expanded regexes without any special characters
+/**
+ * Expands [] sections in a regex string to convert values for https://zkregex.com/min_dfa.
+ * Note: This function is not complete and very case-specific. It can only handle a-z and a-f, and not a-c.
+ * 
+ * @param {string} str The input regex with [] and special characters (i.e., the first line of min_dfa tool).
+ * @returns {string} The expanded regex without any special characters.
+ */
 function regexToMinDFASpec(str: string) {
   // Replace all A-Z with A2Z etc
   // TODO: Upstream this to min_dfa
   let combined_nosep = str
-    .replaceAll("A-Z", A2Z_nosep)
-    .replaceAll("a-z", a2z_nosep)
-    .replaceAll("A-F", A2F_nosep)
-    .replaceAll("a-f", a2f_nosep)
-    .replaceAll("0-9", r0to9_nosep)
-    .replaceAll("\\w", A2Z_nosep + r0to9_nosep + a2z_nosep + "_")
-    .replaceAll("\\d", r0to9_nosep)
+    .replaceAll("A-Z", alphabeticUppercase)
+    .replaceAll("a-z", alphabeticLowercase)
+    .replaceAll("A-F", "ABCDEF")
+    .replaceAll("a-f", "abcdef")
+    .replaceAll("0-9", digits)
+    .replaceAll("\\w", wordCharacters)
+    .replaceAll("\\d", digits)
     .replaceAll("\\s", slash_s);
-  // .replaceAll("\\w", A2Z_nosep + r0to9_nosep + a2z_nosep); // I think that there's also an underscore here
 
+  /**
+   * Adds a pipe inside brackets in the string.
+   * 
+   * @param {string} str The input string to process.
+   * @returns {string} The string with pipes added inside brackets.
+   */
   function addPipeInsideBrackets(str: string) {
     let result = "";
     let insideBrackets = false;
@@ -189,6 +175,12 @@ function regexToMinDFASpec(str: string) {
   //     return result.replaceAll("[|", "[").replaceAll("[", "(").replaceAll("]", ")");
   //   }
 
+  /**
+   * Checks if brackets have pipes inside them.
+   * 
+   * @param {string} str The input string to check.
+   * @returns {boolean} True if brackets have pipes inside them, false otherwise.
+   */
   function checkIfBracketsHavePipes(str: string) {
     let result = true;
     let insideBrackets = false;
@@ -256,18 +248,27 @@ function toNature(col: string) {
   return result;
 }
 
-function printGraphForRegex(regex: string) {
-  let nfa = regexToNfa(regex);
-  let dfa = minDfa(nfaToDfa(nfa as State));
+/**
+ * Generates a minimum DFA graph from the given regular expression.
+ * 
+ * @param {string} regex The (expanded) regular expression to generate the minimum DFA graph from.
+ * @returns {string} The JSON representation of the minimum DFA graph.
+ */
+function generateMinDfaGraph(regex: string) {
+  // Generate NFA from parsed regex
+  const nfa = regexToNfa(regex);
 
-  let i,
-    j,
-    states: Record<string, NewState> = {},
-    nodes: NewState[] = [],
-    stack = [dfa as NewState],
-    symbols = [],
-    top: NewState;
+  // Generate min-DFA from NFA
+  const dfa = minDfa(nfaToDfa(nfa as State));
 
+  let i: number,
+    states: Record<string, GraphState> = {},
+    nodes: GraphState[] = [],
+    stack = [dfa as GraphState],
+    symbols: string[] = [],
+    top: GraphState;
+
+  // Depth-first search to build the graph
   while (stack.length > 0) {
     top = stack.pop()!;
     if (!Object.prototype.hasOwnProperty.call(states, top!.id!)) {
@@ -282,38 +283,35 @@ function printGraphForRegex(regex: string) {
       }
     }
   }
+
+  // Sort nodes by nature
   nodes.sort((a, b) => a.nature! - b.nature!);
   symbols.sort();
 
+  // Build the graph
   let graph = [];
   for (i = 0; i < nodes.length; i += 1) {
-    let curr: NewState = {};
+    let curr: GraphState = {};
     curr.type = nodes[i].type;
-    curr.natureEdges = {};
+    curr.transition = {};
     for (let j = 0; j < symbols.length; j += 1) {
       if (Object.prototype.hasOwnProperty.call(nodes[i].trans, symbols[j])) {
-        curr.natureEdges![symbols[j]] = nodes[i].trans![symbols[j]].nature! - 1;
+        curr.transition![symbols[j]] = nodes[i].trans![symbols[j]].nature! - 1;
       }
     }
     graph[nodes[i].nature! - 1] = curr;
   }
 
-  console.log(JSON.stringify(graph));
+  const BOLD_PINK = "\x1b[35;1m";
+  console.log(BOLD_PINK, 'Min-DFA JSON GRAPH\x1b[0m\n', JSON.stringify(graph), '\n');
+
   return JSON.stringify(graph);
 }
 
-let regex = test_regex();
-console.log('regex string:\n', regex);
-// console.log('regex json:\n', JSON.stringify(regex));
-let expected = "((\r\n)|^)subject:(a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z)+ (\\$)?(0|1|2|3|4|5|6|7|8|9)+(.(0|1|2|3|4|5|6|7|8|9)+)? (a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z)+ to (((a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z|0|1|2|3|4|5|6|7|8|9|.|_|%|\\\\+|-|=)+@(a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z|0|1|2|3|4|5|6|7|8|9|.|-)+)|0x(0|1|2|3|4|5|6|7|8|9|a|b|c|d|e|f|A|_|F)+)\r\n"
-console.log('regex:\n', JSON.stringify(regex), regex == expected, regex.length, regex.slice(415, 430));
-console.log('nfa: ', regexToNfa(expected));
-printGraphForRegex(expected);
+
+// const regex = parseRawRegex('([a-zA-Z0-9]|\\+|/|=)');
+// console.log('nfa: ', regexToNfa(expected));
+// generateMinDfaGraph(regex);
 
 // const graphJson = JSON.parse(printGraphForRegex(regex));
 // console.log(graphJson);
-
-type RegexGraph = {
-  type: string;
-  natureEdges: Record<string, number>;
-};
