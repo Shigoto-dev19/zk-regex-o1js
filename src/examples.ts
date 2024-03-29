@@ -1,6 +1,3 @@
-//TODO Use eval() to return a function from the regex compiler
-//TODO Fix the DFA generator to customly take regex expressions as inputs
-
 import { Bool, Field } from 'o1js';
 
 export { simpleRegex, emailRegex, base64Regex, minaRegex }
@@ -80,6 +77,7 @@ function simpleRegex(input: Field[]) {
 }
 
 // ([a-zA-Z0-9._%-=]+@[a-zA-Z0-9.-]+.[a-z])
+// Note: this is note the perfect regex pattern for an email: this is just for testing purposes
 function emailRegex(input: Field[]) {
         const num_bytes = input.length;
         let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);

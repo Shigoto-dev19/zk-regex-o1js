@@ -1,5 +1,3 @@
-//TODO Add MINA string regex test example
-
 import { Field } from 'o1js';
 import {
   simpleRegex, 
