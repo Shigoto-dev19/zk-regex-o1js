@@ -1,12 +1,16 @@
 import { assert } from "o1js";
 import { 
-    test_regex, 
-    printGraphForRegex, 
-    RegexGraph,
-} from "./regex_to_dfa.js";
+    parseRawRegex, 
+    generateMinDfaGraph, 
+} from "./regexToDfa.js";
 
-const regex = test_regex();
-const graphJson: RegexGraph[] = JSON.parse(printGraphForRegex(regex));
+type StateTransition = {
+    type: string;
+    transition: Record<string, number>;
+};
+
+const expandedRegex = parseRawRegex(`([a-zA-Z0-9]|\\+|/|=)`);
+const graphJson: StateTransition[] = JSON.parse(generateMinDfaGraph(expandedRegex));
 
 const N = graphJson.length;
 
@@ -19,11 +23,9 @@ const revGraph: [string, number][][] = Array.from({ length: N }, () => []);
 const acceptNodes: Set<number> = new Set();
 
 for (let i = 0; i < N; i++) {
-    // graph.push({});
-    // revGraph.push([]);
     const currentNode = graphJson[i];
-    for (const k in currentNode.natureEdges) {
-        const v = currentNode.natureEdges[k];
+    for (const k in currentNode.transition) {
+        const v = currentNode.transition[k];
         graph[i][k] = v;
         revGraph[v].push([k, i]);
     }
@@ -60,7 +62,6 @@ for (let i = 1; i < N; i++) {
         const digits: Set<string> = new Set("0123456789");
 
         if (Array.from(uppercase).every(val => vals.has(val))) {
-            // vals.forEach(val => vals.delete(val));
             vals = new Set([...vals].filter(char => !uppercase.has(char)));
             lines.push(`\tconst lt${lt_i} = Field(64).lessThan(input[i]);`);
 
@@ -108,9 +109,6 @@ for (let i = 1; i < N; i++) {
             eq_i += 1;
         }
 
-        // lines.push(`\tand[${and_i}][i] = AND();`);
-        // lines.push(`\tand[${and_i}][i].a <== states[i][${prev_i}];`);
-
         if (eq_outputs.length === 1) {
             lines.push(`\tconst and${and_i} = states[i][${prev_i}].and(${eq_outputs[0][0]}${eq_outputs[0][1]});`);
         } else if (eq_outputs.length > 1) {
@@ -130,17 +128,14 @@ for (let i = 1; i < N; i++) {
     if (outputs.length === 1) {
         lines.push(`\tstates[i+1][${i}] = and${outputs[0]};`);
 
-        // lines.push(`\tstates[i+1][${i}] <== and[${outputs[0]}][i].out;`);
     } else if (outputs.length > 1) {
         lines.push(`\tlet multi_or${multi_or_i} = Bool(false);`);
 
-        // lines.push(`\tmulti_or[${multi_or_i}][i] = MultiOR(${outputs.length});`);
         for (let output_i = 0; output_i < outputs.length; output_i++) {
             lines.push(`\tmulti_or${multi_or_i} = multi_or${multi_or_i}.or(and${outputs[output_i]});`);
         }
         lines.push(`\tstates[i+1][${i}] = multi_or${multi_or_i};`);
 
-        // lines.push(`\tstates[i+1][${i}] <== multi_or[${multi_or_i}][i].out;`);
         multi_or_i += 1;
     }
 }
@@ -179,9 +174,12 @@ accept_lines.push("const out = final_state_sum[num_bytes];");
 accept_lines.push("\n\treturn out;")
 
 lines.push(...accept_lines);
+
 export const functionString = 
     "\n(input: Field[]) {\n" +
     lines.join('\n\t') + 
     "\n}";
+
+const BOLD_GREEN = "\x1b[32;1m";
+console.log(BOLD_GREEN, "-------------------- YOU CAN COPY THE O1JS ZK REGEX CIRCUIT BELOW --------------------\x1b[0m")
 console.log(functionString);
-// console.log(lines.join("\n"));
