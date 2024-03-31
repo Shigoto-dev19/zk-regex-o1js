@@ -88,7 +88,7 @@ function parseRawRegex(rawRegex: string) {
   const parsedRegex = regexToMinDFASpec(rawRegex);
   
   // Print input parsed regex
-  console.log(BOLD_BLUE, 'INPUT PARSED REGEX\x1b[0m\n', parsedRegex, '\n');
+  console.log(BOLD_BLUE, 'INPUT EXPANDED REGEX\x1b[0m\n', parsedRegex, '\n');
 
   return parsedRegex;
 }
