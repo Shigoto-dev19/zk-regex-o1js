@@ -9,7 +9,8 @@ type StateTransition = {
     transition: Record<string, number>;
 };
 
-const expandedRegex = parseRawRegex(`([a-zA-Z0-9]|\\+|/|=)`);
+const rawRegex = process.argv[2] ?? `[a-z]+`;
+const expandedRegex = parseRawRegex(rawRegex);
 const graphJson: StateTransition[] = JSON.parse(generateMinDfaGraph(expandedRegex));
 
 const N = graphJson.length;
