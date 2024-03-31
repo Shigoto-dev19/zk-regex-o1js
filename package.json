@@ -2,7 +2,7 @@
   "name": "zk-regex-o1js",
   "version": "0.1.0",
   "description": "",
-  "author": "",
+  "author": "Shigoto-dev19",
   "license": "Apache-2.0",
   "keywords": [
     "mina-zkapp",
@@ -20,7 +20,9 @@
     "format": "prettier --write --ignore-unknown **/*",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "testw": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
-    "lint": "npx eslint src/* --fix"
+    "lint": "npx eslint src/* --fix",
+    "zk-regex": "npm run build && node build/src/zkRegex.js",
+    "example": "npm run zk-regex [a-z]+"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.16.4",
