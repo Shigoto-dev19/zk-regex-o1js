@@ -63,7 +63,8 @@ npm run coverage
     - Note: The optional character is not accepted, as the compiler throws an error stating 'Accept nodes length must be exactly 1'.
  - **ORing (Character/Number Classes):** Expressions can be ORed together using brackets and the | character to form character or number classes. For example: [ABC] or [345].
  - **Ranges:** Ranges of characters or numbers can be defined using brackets and the - character. For example: [0-9] or [a-z].
- - **Grouping:** Expressions can be grouped using parentheses to control the order of operations. For example: (ABD)+.
+ - **Grouping:** Allows treating multiple characters or patterns as a single unit. This is useful for applying quantifiers or operators to multiple characters or patterns at once. For example, (ab)+ would match one or more occurrences of the sequence "ab".
+ - **Negation**: The ^ character can be used to negate characters or ranges within character classes. For example, [^aeiou] matches any character that is not a vowel.
 
 For more details, you can visit this amazing [ZK Regex Tools](https://zkregex.com/min_dfa) website.
 

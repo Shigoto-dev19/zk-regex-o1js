@@ -19,7 +19,6 @@ type GraphState = {
   transition?: Record<string, number>
 }
 
-
 /// Helper regex components: Contains constants can be used in your code for various purposes such as regex patterns and character validations.
 
 function barSeparated(input: string) {
@@ -141,22 +140,37 @@ function regexToMinDFASpec(str: string) {
   function addPipeInsideBrackets(str: string) {
     let result = "";
     let insideBrackets = false;
+    let negateBracket = false;
     for (let i = 0; i < str.length; i++) {
       if (str[i] === "[") {
-        result += str[i];
+        if (str[i + 1] === "^") {
+          negateBracket = true;
+          result += str[i];
+          continue;
+        }
+        result += "(";
         insideBrackets = true;
         continue;
-      } else if (str[i] === "]") {
+      } else if (str[i] === "]" || str[i] === ")") {
+        if (negateBracket) {
+          result += str[i];
+          negateBracket = false;
+          continue;
+        }
+        result += ")";
+        
         insideBrackets = false;
       }
-      let str_to_add = str[i];
-      if (str[i] === "\\") {
-        i++;
-        str_to_add += str[i];
+      else {
+        let str_to_add = str[i];
+        if (str[i] === "\\") {
+          i++;
+          str_to_add += str[i];
+        }
+        result += insideBrackets ? "|" + str_to_add : str_to_add;
       }
-      result += insideBrackets ? "|" + str_to_add : str_to_add;
     }
-    return result.replaceAll("[|", "[").replaceAll("[", "(").replaceAll("]", ")");
+    return result.replaceAll("[|", "[").replaceAll("(|", "(");
   }
 
   //   function makeCurlyBracesFallback(str) {
@@ -184,15 +198,18 @@ function regexToMinDFASpec(str: string) {
   function checkIfBracketsHavePipes(str: string) {
     let result = true;
     let insideBrackets = false;
+    let negateBracket = false;
     let insideParens = 0;
     let indexAt = 0;
     for (let i = 0; i < str.length; i++) {
       if (indexAt >= str.length) break;
       if (str[indexAt] === "[") {
-        insideBrackets = true;
+        if (str[i + 1] === "^") negateBracket = true;
+        insideBrackets = !negateBracket;
         indexAt++;
         continue;
       } else if (str[indexAt] === "]") {
+        if (negateBracket) negateBracket = false;
         insideBrackets = false;
       }
       if (str[indexAt] === "(") {

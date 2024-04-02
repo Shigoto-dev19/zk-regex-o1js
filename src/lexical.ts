@@ -73,9 +73,9 @@ function parseRegex(text: string) {
           }
           parts.push(sub);
           last = i + 1;
-        } else if (text[i] === "(") {
+        } else if (text[i] === '(' || text[i] === '[') {
           stack += 1;
-        } else if (text[i] === ")") {
+        } else if (text[i] === ')' || text[i] === ']') {
           stack -= 1;
         }
       }
@@ -99,7 +99,31 @@ function parseRegex(text: string) {
             i += 1;
           }
           if (stack !== 0) {
-            return "Error: missing right bracket for " + (begin + last).toString() + ".";
+            return 'Error: missing right parentheses for ' + (begin + last) + '.';
+          }
+          i -= 1;
+          sub = parseSub(text.slice(last, i), begin + last, begin + i, true);
+          if (typeof sub === 'string') {
+              return sub;
+          }
+          sub.begin -= 1;
+          sub.end += 1;
+          parts.push(sub);
+        } else if (text[i] === '[') {
+          last = i + 1;
+          i += 1;
+          if (text[i] === '^') {
+              text[i] = '\u{ff}';
+          }
+          stack = 1;
+          while (i < text.length && stack !== 0) {
+              if (text[i] === ']') {
+                  stack -= 1;
+              }
+              i += 1;
+          }
+          if (stack !== 0) {
+              return 'Error: missing right brackets for ' + (begin + last) + '.';
           }
           i -= 1;
           sub = parseSub(text.slice(last, i), begin + last, begin + i, true);
@@ -108,7 +132,7 @@ function parseRegex(text: string) {
           }
           sub.begin -= 1;
           sub.end += 1;
-          parts.push(sub);
+          parts.push(sub);        
         } else if (text[i] === "*") {
           if (parts.length === 0) {
             return "Error: unexpected * at " + (begin + i).toString() + ".";
@@ -143,7 +167,7 @@ function parseRegex(text: string) {
           tempNode = { begin: begin + i, end: begin + i + 1 };
           tempNode.type = "empty";
           parts.push(tempNode);
-        } else if (text[i].length == 2) {
+        } else if (text[i].length === 2) {
           tempNode = { begin: begin + i, end: begin + i + 1 };
           tempNode.type = "text";
           tempNode.text = text[i][0];
@@ -164,19 +188,52 @@ function parseRegex(text: string) {
     return node;
   }
 
+  let char = '';
   let new_text: string[] = [];
   let i = 0;
+  let is_in_bracket = false;
   while (i < text.length) {
+    char = text[i];
     if (text[i] === "\\") {
-      const escapeMap: Record<string, string> = { n: "\n", r: "\r", t: "\t", v: "\v", f: "\f", "^": String.fromCharCode(128) };
-      const char = text[i + 1];
-      new_text.push(escapeMap[char] || char.repeat(2));
-      i += 2;
-    } else {
-      new_text.push(text[i]);
-      i += 1;
+        char = text[i + 1].repeat(2);
+        new_text.push(char);
+        i += 1;
     }
+    if (char === '[') {
+        if (is_in_bracket) {
+            return `Error: unexpected [ at ${i}.`;
+        }
+        is_in_bracket = true;
+        new_text.push(char);
+        i += 1;
+    } else if (char === ']') {
+        if (!is_in_bracket) {
+            return `Error: unexpected ] at ${i}.`;
+        }
+        is_in_bracket = false;
+        new_text.pop();
+        new_text.push(char);
+        i += 1;
+    } else if (is_in_bracket) {
+        if (char.length !== 2 && ['(', ')', '[', '*', '+', '?', 'ϵ'].includes(char)) {
+            return 'Error: unexpected ' + char + ' at ' + i + '.';
+        }
+        if (char === '^' && text[i - 1] !== '[') {
+            return 'Error: unexpected ^ at ' + i + '.';
+        }
+        new_text.push(char);
+        new_text.push('|');
+        i += 1;
+      } else {
+        new_text.push(text[i]);
+        i += 1;
+      }
   }
+  
+  if (is_in_bracket) {
+      return `Error: missing right brakets.`;
+  }
+    
   return parseSub(new_text, 0, new_text.length, true);
 }
 
