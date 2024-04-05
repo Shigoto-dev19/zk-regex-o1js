@@ -196,7 +196,6 @@ function parseRegex(text: string) {
     char = text[i];
     if (text[i] === "\\") {
         char = text[i + 1].repeat(2);
-        new_text.push(char);
         i += 1;
     }
     if (char === '[') {
@@ -225,15 +224,14 @@ function parseRegex(text: string) {
         new_text.push('|');
         i += 1;
       } else {
-        new_text.push(text[i]);
+        new_text.push(char);
         i += 1;
       }
   }
   
   if (is_in_bracket) {
-      return `Error: missing right brakets.`;
+      return `Error: missing right brackets.`;
   }
-    
   return parseSub(new_text, 0, new_text.length, true);
 }
 
