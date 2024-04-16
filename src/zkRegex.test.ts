@@ -1,9 +1,10 @@
-import { Field } from 'o1js';
+import { Bool, Bytes, Field, Provable } from 'o1js';
 import {
   simpleRegex, 
   emailRegex, 
   base64Regex, 
   minaRegex,
+  negateRegex,
 } from './examples';
 
 //TODO use `Bytes.fromString(input).toFields()` instead
@@ -18,6 +19,43 @@ function padString(str: string, paddedBytesSize?: number): Field[] {
     }
 
     return paddedBytes.map(Field);
+}
+
+function utf8BytesToString(bytes: bigint[]): string {
+  let utf8String = '';
+  let codepoint = 0;
+  let remainingBytes = 0;
+
+  for (const byte of bytes.map(Number)) {
+      if (remainingBytes === 0) {
+          if (byte <= 0x7F) {
+              // Single byte character (ASCII)
+              utf8String += String.fromCharCode(Number(byte));
+          } else if (byte >= 0xC0 && byte <= 0xDF) {
+              // Two byte character
+              codepoint = byte & 0x1F;
+              remainingBytes = 1;
+          } else if (byte >= 0xE0 && byte <= 0xEF) {
+              // Three byte character
+              codepoint = byte & 0x0F;
+              remainingBytes = 2;
+          } else if (byte >= 0xF0 && byte <= 0xF7) {
+              // Four byte character
+              codepoint = byte & 0x07;
+              remainingBytes = 3;
+          }
+      } else {
+          // Continuation byte
+          codepoint = (codepoint << 6) | (byte & 0x3F);
+          remainingBytes--;
+
+          if (remainingBytes === 0) {
+              utf8String += String.fromCharCode(codepoint);
+          }
+      }
+  }
+
+  return utf8String;
 }
 
 // 1=(a|b) (2=(b|c)+ )+d
@@ -466,12 +504,11 @@ describe("Email Regex", () => {
   });
 });
 
-// ([a-zA-Z0-9]|\\+|/|=)
+// ([a-zA-Z0-9]|\\+|/|=)+
 describe("Base64 Regex", () => {
   it("should accept valid input: alphabetic lowercase", () => {
     const input = "jkjasldfjlskdf";
     const paddedStr = padString(input);
-    
     const isValid = base64Regex(paddedStr);
     expect(isValid).toEqual(Field(input.length));
   });
@@ -560,32 +597,32 @@ describe("Base64 Regex", () => {
     const input = "shigotoDev.12D";
     const paddedStr = padString(input);
     
-    const isValid = emailRegex(paddedStr);
-    expect(isValid).toEqual(Field(0))
+    const isValid = base64Regex(paddedStr);
+    expect(isValid).toEqual(Field(input.length - 1))
   });
 
   it("should reject invalid input: invalid character $", () => {
     const input = "59$FORpay2MEnt=";
     const paddedStr = padString(input);
     
-    const isValid = emailRegex(paddedStr);
-    expect(isValid).toEqual(Field(0))
+    const isValid = base64Regex(paddedStr);
+    expect(isValid).toEqual(Field(input.length - 1))
   });
 
   it("should reject invalid input: invalid character >", () => {
     const input = "sZW23sf=>s12/";
     const paddedStr = padString(input);
     
-    const isValid = emailRegex(paddedStr);
-    expect(isValid).toEqual(Field(0))
+    const isValid = base64Regex(paddedStr);
+    expect(isValid).toEqual(Field(input.length - 1))
   });
 
   it("should reject invalid input: invalid character #", () => {
     const input = "1AQX=/EWS#p94";
     const paddedStr = padString(input);
     
-    const isValid = emailRegex(paddedStr);
-    expect(isValid).toEqual(Field(0))
+    const isValid = base64Regex(paddedStr);
+    expect(isValid).toEqual(Field(input.length - 1))
   });
 });
 
@@ -710,5 +747,126 @@ describe("Mina Regex", () => {
     
     const isValid = minaRegex(paddedStr);
     expect(isValid).toEqual(Field(0));
+  });
+});
+
+// a:[^abcdefghijklmnopqrstuvwxyz]+.
+describe("Negate Regex", () => {
+  it("should accept valid input: case 1", () => {
+    const input = "a: ABCDEFG XYZ.";
+    const paddedStr = padString(input);
+    
+    const isValid = negateRegex(paddedStr);
+    const revealedBytes = isValid.reveal0.map(f => f.toBigInt());
+    const revealedString = utf8BytesToString(revealedBytes);
+    console.log('revealedString: ', revealedString);
+
+    expect(isValid.out).toEqual(Bool(true));
+  });
+
+  it("should accept valid input: spanish", () => {
+    // Spanish character "í" has 2 bytes.
+    const input = "a: CRIPTOGRAFíA.";
+    const paddedStr = padString(input);
+    Provable.log('spanish input bytes: ', paddedStr)
+    const isValid = negateRegex(paddedStr);
+    const revealedBytes = isValid.reveal0.map(f => f.toBigInt());
+    Provable.log('revealedBytes: ', revealedBytes)
+    const revealedString = utf8BytesToString(revealedBytes);
+    console.log('revealedString: ', revealedString);
+
+    expect(isValid.out).toEqual(Bool(true));
+  });
+
+  it("should accept valid input: japanese", () => {
+    // Each Japanese character has 3 bytes.
+    const input = "a: あいう.";
+    const paddedStr = padString(input);
+    
+    const isValid = negateRegex(paddedStr);
+    const revealedBytes = isValid.reveal0.map(f => f.toBigInt());
+    const revealedString = utf8BytesToString(revealedBytes);
+    console.log('revealedString: ', revealedString);
+
+    expect(isValid.out).toEqual(Bool(true));
+  });
+
+  it("should accept valid input: arabic", () => {
+    /// Arabian character "التشفير" has 14 bytes.
+    const input = "a: التشفير.";
+    const paddedStr = padString(input);
+    
+    const isValid = negateRegex(paddedStr);
+    const revealedBytes = isValid.reveal0.map(f => f.toBigInt());
+    const revealedString = utf8BytesToString(revealedBytes);
+    console.log('revealedString: ', revealedString);
+
+    expect(isValid.out).toEqual(Bool(true));
+  });
+
+  it("should accept valid input: contains ?#%", () => {
+    const input = "a: HA?SH#ING%.";
+    const paddedStr = padString(input);
+    
+    const isValid = negateRegex(paddedStr);
+    const revealedBytes = isValid.reveal0.map(f => f.toBigInt());
+    const revealedString = utf8BytesToString(revealedBytes);
+    console.log('revealedString: ', revealedString);
+
+    expect(isValid.out).toEqual(Bool(true));
+  });
+
+  
+  it("should not accept invalid input: 'a' missing", () => {
+    const input = "b: ADSFS.";
+    const paddedStr = padString(input);
+    
+    const isValid = negateRegex(paddedStr);
+    expect(isValid.out).toEqual(Bool(false));
+  });
+
+  it("should not accept invalid input: ':' mssing", () => {
+    const input = "a CRYPTO.";
+    const paddedStr = padString(input);
+    
+    const isValid = negateRegex(paddedStr);
+    expect(isValid.out).toEqual(Bool(false));
+  });
+
+  it("should not accept invalid input: missing '.' at the end", () => {
+    const input = "a: FROG";
+    const paddedStr = padString(input);
+    
+    const isValid = negateRegex(paddedStr);
+    expect(isValid.out).toEqual(Bool(false));
+  });
+
+  it("should not accept invalid input: all lowercase", () => {
+    const input = "a: cryptage.";
+    const paddedStr = padString(input);
+    
+    const isValid = negateRegex(paddedStr);
+    expect(isValid.out).toEqual(Bool(false));
+  });
+
+  it("should not accept invalid input: contains lowercase", () => {
+    const input = "a: CryptoGraphy.";
+    const paddedStr = padString(input);
+    
+    const isValid = negateRegex(paddedStr);
+    expect(isValid.out).toEqual(Bool(false));
+  });
+
+  it("should not accept invalid input: contains ?#%", () => {
+    const input = "a: HA?SH#ING%.";
+    const paddedStr = padString(input);
+    
+    const isValid = negateRegex(paddedStr);
+
+    const revealedBytes = isValid.reveal0.map(f => f.toBigInt());
+    const revealedString = utf8BytesToString(revealedBytes);
+    console.log('revealedString: ', revealedString);
+
+    expect(isValid.out).toEqual(Bool(true));
   });
 });
