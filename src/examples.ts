@@ -1,6 +1,12 @@
 import { Bool, Field } from 'o1js';
 
-export { simpleRegex, emailRegex, base64Regex, minaRegex }
+export { 
+        simpleRegex, 
+        emailRegex, 
+        base64Regex, 
+        minaRegex,
+        negateRegex,
+}
 
 // 1=(a|b) (2=(b|c)+ )+d
 function simpleRegex(input: Field[]) {
@@ -391,4 +397,96 @@ function minaRegex(input: Field[]) {
         const out = final_state_sum[num_bytes];
 
         return out;
+}
+
+// a:[^abcdefghijklmnopqrstuvwxyz]+.
+function negateRegex(input: Field[]) {
+        const num_bytes = input.length;
+        let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);
+        let state_changed: Bool[] = Array.from({ length: num_bytes }, () => Bool(false));
+
+        states[0][0] = Bool(true);
+        for (let i = 1; i < 5; i++) {
+                states[0][i] = Bool(false);
+        }
+
+        for (let i = 0; i < num_bytes; i++) {
+                const lt0 = Field(96).lessThan(input[i]);
+                const lt1 = input[i].lessThan(123);
+                const and0 = lt0.and(lt1)
+                const eq0 = input[i].equals(46);
+                let multi_or0 = Bool(false);
+                multi_or0 = multi_or0.or(and0);
+                multi_or0 = multi_or0.or(eq0);
+                const and1 = states[i][1].and(multi_or0.not());
+                const lt2 = Field(96).lessThan(input[i]);
+                const lt3 = input[i].lessThan(123);
+                const and2 = lt2.and(lt3)
+                const and3 = states[i][4].and(and2.not());
+                let multi_or1 = Bool(false);
+                multi_or1 = multi_or1.or(and1);
+                multi_or1 = multi_or1.or(and3);
+                states[i+1][1] = multi_or1;
+                state_changed[i] = state_changed[i].or(states[i+1][1]);
+                const eq1 = input[i].equals(46);
+                const and4 = states[i][1].and(eq1);
+                states[i+1][2] = and4;
+                state_changed[i] = state_changed[i].or(states[i+1][2]);
+                const eq2 = input[i].equals(97);
+                const and5 = states[i][0].and(eq2);
+                states[i+1][3] = and5;
+                state_changed[i] = state_changed[i].or(states[i+1][3]);
+                const eq3 = input[i].equals(58);
+                const and6 = states[i][3].and(eq3);
+                states[i+1][4] = and6;
+                state_changed[i] = state_changed[i].or(states[i+1][4]);
+                states[i+1][0] = state_changed[i].not();
+        }
+
+        let final_state_result = Bool(false);
+        for (let i = 0; i <= num_bytes; i++) {
+                final_state_result = final_state_result.or(states[i][2]);
+        }
+
+        const out = final_state_result;
+        // return final_state_result;
+
+        // let final_state_sum: Field[] = [];
+        // final_state_sum[0] = states[0][2].toField();
+        // for (let i = 1; i <= num_bytes; i++) {
+        //         final_state_sum[i] = final_state_sum[i-1].add(states[i][2].toField());
+        // }
+        // const out = final_state_sum[num_bytes];
+
+        // return out;
+
+        // ----
+        // const is_consecutive[msg_bytes+1][2];
+        const msg_bytes = num_bytes - 1;
+        const is_consecutive: Bool[][] = Array.from({ length: num_bytes }, () => []);
+	is_consecutive[num_bytes - 1][1] = Bool(true);
+	for (let i = 0; i < msg_bytes; i++) {
+		is_consecutive[msg_bytes-1-i][0] = states[num_bytes-i][2].and(is_consecutive[msg_bytes-i][1].not()).or(is_consecutive[msg_bytes-i][1]);
+		// is_consecutive[msg_bytes-1-i][0] <== states[num_bytes-i][2] * (1 - is_consecutive[msg_bytes-i][1]) + is_consecutive[msg_bytes-i][1];
+		is_consecutive[msg_bytes-1-i][1] = state_changed[msg_bytes-i].and(is_consecutive[msg_bytes-1-i][0]);
+		// is_consecutive[msg_bytes-1-i][1] <== state_changed[msg_bytes-i].out * is_consecutive[msg_bytes-1-i][0];
+	}
+	let is_substr0: Bool[][] = Array.from({ length: msg_bytes }, () => []);
+	// signal is_substr0[msg_bytes][3];
+	const is_reveal0: Bool[] = [];
+	// signal is_reveal0[msg_bytes];
+	const reveal0: Field[] = [];
+	// signal output reveal0[msg_bytes];
+	for (let i = 0; i < msg_bytes; i++) {
+		is_substr0[i][0] = Bool(false);
+		is_substr0[i][1] = is_substr0[i][0].or(states[i+1][4].and(states[i+2][1]));
+		// is_substr0[i][1] <== is_substr0[i][0] + states[i+1][4] * states[i+2][1];
+		is_substr0[i][2] = is_substr0[i][1].or(states[i+1][1].or(states[i+2][1]));
+		// is_substr0[i][2] <== is_substr0[i][1] + states[i+1][1] * states[i+2][1];
+		is_reveal0[i] = is_substr0[i][2].and(is_consecutive[i][1]);
+		// is_reveal0[i] <== is_substr0[i][2] * is_consecutive[i][1];
+		reveal0[i] = input[i+1].mul(is_reveal0[i].toField());
+	}
+
+        return {out, reveal0}
 }
