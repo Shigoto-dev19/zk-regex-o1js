@@ -99,13 +99,6 @@ let lt_i = 0;
 let and_i = 0;
 let multi_or_i = 0;
 
-const uppercase = new Set(Array.from("ABCDEFGHIJKLMNOPQRSTUVWXYZ").map(c => c.charCodeAt(0)));
-const lowercase = new Set(Array.from("abcdefghijklmnopqrstuvwxyz").map(c => c.charCodeAt(0)));
-const digits = new Set(Array.from("0123456789").map(c => c.charCodeAt(0)));
-const symbols1 = new Set([":", ";", "<", "=", ">", "?", "@"].map(c => c.charCodeAt(0)));
-const symbols2 = new Set(["[", "\\", "]", "^", "_", "`"].map(c => c.charCodeAt(0)));
-const symbols3 = new Set(["{", "|", "}", "~"].map(c => c.charCodeAt(0)));
-
 let lines: string[] = [];
 
 lines.push("for (let i = 0; i < num_bytes; i++) {");
@@ -115,6 +108,7 @@ for (let i = 1; i < N; i++) {
     const outputs: number[] = [];
     for (let prev_i of Object.keys(revGraph[i])) {
         const k = revGraph[i][Number(prev_i)];
+        k.sort((a, b) => a - b);
         const eq_outputs: Array<[string, number]> = [];
         let vals = new ExtendedSet(k);
         let is_negate = false;
@@ -142,40 +136,38 @@ for (let i = 1; i < N; i++) {
                 }
             }
         }
-        const min_maxs: [number, number][] = [];
-        for (let subsets of [
-            [digits, 47, 58],
-            [symbols1, 57, 65],
-            [uppercase, 64, 91],
-            [symbols2, 90, 97],
-            [lowercase, 96, 123],
-            [symbols3, 122, 127]
-        ]) {
-            const subset = subsets[0] as Set<number>;
-            const min = subsets[1] as number;
-            const max = subsets[2] as number;
-            if (vals.isSuperset(subset)) {
-                vals.difference(subset);
-                if (min_maxs.length == 0) {
-                    min_maxs.push([min, max]);
-                } else {
-                    const last = min_maxs[min_maxs.length - 1];
-                    if (last[1] - 1 == min) {
-                        min_maxs[min_maxs.length - 1][1] = max;
-                    } else {
-                        min_maxs.push([min, max]);
-                    }
+        
+        const min_maxes: [number, number][] = [];
+        let cur_min = k[0];
+        let cur_max = k[0];
+        for (let idx = 1; idx < k.length; ++idx) {
+            if (cur_max + 1 === k[idx]) {
+                cur_max += 1;
+            } else {
+                if (cur_max - cur_min >= 16) {
+                    min_maxes.push([cur_min, cur_max]);
                 }
+                cur_min = k[idx];
+                cur_max = k[idx];
+            }
+        }
+
+        if (cur_max - cur_min >= 16) {
+            min_maxes.push([cur_min, cur_max]);
+        }
+        for (const min_max of min_maxes) {
+            for (let code = min_max[0]; code <= min_max[1]; ++code) {
+                vals.delete(code);
             }
         }
         
         // refactored the code from below when handling lower & upper alphabetic and digits
-        for (let min_max of min_maxs) {
-            lines.push(`\tconst lt${lt_i} = Field(${min_max[0]}).lessThan(input[i]);`);
+        for (let min_max of min_maxes) {
+            lines.push(`\tconst lt${lt_i} = Field(${min_max[0]}).lessThanOrEqual(input[i]);`);
 
-            lines.push(`\tconst lt${lt_i+1} = input[i].lessThan(${min_max[1]});`);
+            lines.push(`\tconst lt${lt_i+1} = input[i].lessThanOrEqual(${min_max[1]});`);
 
-            lines.push(`\tconst and${and_i} = lt${lt_i}.and(lt${lt_i+1})`);
+            lines.push(`\tconst and${and_i} = lt${lt_i}.and(lt${lt_i+1});`);
 
             eq_outputs.push(['and', and_i]);
             lt_i += 2
@@ -193,7 +185,8 @@ for (let i = 1; i < N; i++) {
             if (is_negate) {
                 lines.push(`\tconst and${and_i} = states[i][${prev_i}].and(${eq_outputs[0][0]}${eq_outputs[0][1]}.not());`);
             } else {
-                lines.push(`\tconst and${and_i} = states[i][${prev_i}].and(${eq_outputs[0][0]}${eq_outputs[0][1]});`);            }
+                lines.push(`\tconst and${and_i} = states[i][${prev_i}].and(${eq_outputs[0][0]}${eq_outputs[0][1]});`);  
+            }
         } else if (eq_outputs.length > 1) {
             lines.push(`\tlet multi_or${multi_or_i} = Bool(false);`);
 
@@ -233,7 +226,7 @@ const declarations: string[] = [];
 declarations.push(`\tconst num_bytes = input.length;`);
 declarations.push(`let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);`);
 declarations.push(`let state_changed: Bool[] = Array.from({ length: num_bytes }, () => Bool(false));`);
-// declarations.push(`\nlet input = [...inputBytes];`);
+// declarations.push(`\n\tlet input = [...inputBytes];`);
 // declarations.push(`input.unshift(Field(255));`);
 
 declarations.push("");
