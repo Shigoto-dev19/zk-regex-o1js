@@ -1,4 +1,8 @@
 //TODO Declare state_changed outside of the loop declaration
+//TODO Add substring transition extractor
+//TODO Add option to use raw transition or extractor
+//TODO Refactor is_substr calculation
+//TODO fix occurence compiler code when regex ends with repetition operator +
 
 import { 
     parseRawRegex, 
@@ -30,7 +34,7 @@ class ExtendedSet<T> extends Set<T> {
     }
 }
 
-const rawRegex = process.argv[2] ?? "[^aeiou]+";
+const rawRegex = process.argv[2] ?? "1=(a|b) (2=(b|c)+ )+d";
 const expandedRegex = parseRawRegex(rawRegex);
 const graphJson: StateTransition[] = JSON.parse(generateMinDfaGraph(expandedRegex));
 
@@ -249,31 +253,83 @@ lines = declarations.concat(init_code).concat(lines);
 const accept_node: number = acceptNodesArray[0];
 const accept_lines = [""];
 
-const occurence = true;
+const occurence = false;
 if (occurence) {
     accept_lines.push("let final_state_sum: Field[] = [];");
     accept_lines.push(`final_state_sum[0] = states[0][${accept_node}].toField();`);
     accept_lines.push("for (let i = 1; i <= num_bytes; i++) {");
     accept_lines.push(`\tfinal_state_sum[i] = final_state_sum[i-1].add(states[i][${accept_node}].toField());`);
     accept_lines.push("}");
-    accept_lines.push("const out = final_state_sum[num_bytes];");
-    accept_lines.push("\n\treturn out;")
+    accept_lines.push("const out = final_state_sum[num_bytes];\n");
+    // accept_lines.push("\n\treturn out;")
 } else {
     accept_lines.push("let final_state_result = Bool(false);");
     accept_lines.push("for (let i = 0; i <= num_bytes; i++) {");
     accept_lines.push(`\tfinal_state_result = final_state_result.or(states[i][${accept_node}]);`);
     accept_lines.push("}");
-    accept_lines.push("\n\treturn final_state_result;");
+    accept_lines.push("\n\tconst out = final_state_result;\n");
 }
 
-
 lines.push(...accept_lines);
+
+function substring_lines(substrDefsArray: [number, number][][]): string {
+    let reveal = '';
+    reveal += "\n";
+    reveal += "\tconst msg_bytes = num_bytes - 1;\n"
+    reveal += "\tconst is_consecutive: Bool[][] = Array.from({ length: num_bytes }, () => []);\n";
+    reveal += "\tis_consecutive[msg_bytes][1] = Bool(true);\n";
+    reveal += "\tfor (let i = 0; i < msg_bytes; i++) {\n";
+    reveal += `\t\tis_consecutive[msg_bytes-1-i][0] = states[num_bytes-i][${accept_node}].and(is_consecutive[msg_bytes-i][1].not()).or(is_consecutive[msg_bytes-i][1]);\n`;
+    reveal += "\t\tis_consecutive[msg_bytes-1-i][1] = state_changed[msg_bytes-i].and(is_consecutive[msg_bytes-1-i][0]);\n";
+    reveal += "\t}\n\n";
+    reveal += `\t// revealed transitions: ${JSON.stringify(substrDefsArray)}\n`;
+    reveal += `\tlet reveal: Field[][] = []`
+
+    for (let idx = 0; idx < substrDefsArray.length; idx++) {
+        const defs = substrDefsArray[idx];
+        const numDefs = defs.length;
+        let includes_accept = defs.flat().includes(accept_node);
+        let bound_accept = includes_accept ? '' : ' - 1';
+        
+        reveal += `\n\n\t// the ${idx}-th substring transitions: ${JSON.stringify(defs)}\n`;
+        reveal += `\tconst is_reveal${idx}: Bool[] = [];\n`;
+        reveal += `\tlet is_substr${idx}: Bool[][] = Array.from({ length: msg_bytes }, () => []);\n`;
+        reveal += `\tconst reveal${idx}: Field[] = [];\n`;
+        reveal += `\tfor (let i = 0; i < msg_bytes${bound_accept}; i++) {\n`;
+        reveal += `\t\tis_substr${idx}[i][0] = Bool(false);\n`;
+
+        for (let j = 0; j < defs.length; j++) {
+            const [cur, next] = defs[j];
+            reveal += `\t\tis_substr${idx}[i][${j + 1}] = is_substr${idx}[i][${j}].or(`;
+            reveal += `states[i+1][${cur}].and(states[i+2][${next}]));\n`;
+        }
+
+        reveal += `\t\tis_reveal${idx}[i] = is_substr${idx}[i][${numDefs}].and(is_consecutive[i][1]);\n`;
+        reveal += `\t\treveal${idx}[i] = input[i+1].mul(is_reveal${idx}[i].toField());\n`;
+        reveal += "\t}\n";
+        reveal += `\treveal.push(reveal${idx});`;
+    }
+
+    return reveal
+}
+
+const revealedTransitions: [number, number][][] = [[[4, 5], [5, 5]]];
+
+const substringEnabled = true;
+let reveal_lines: string;
+if (substringEnabled) {
+    reveal_lines = substring_lines(revealedTransitions) +
+    "\n\n\treturn { out, reveal };"
+} else {
+    reveal_lines = "\n\treturn out;"
+}
 
 export const functionString = 
     "\n(input: Field[]) {\n" +
     lines.join('\n\t') + 
+    reveal_lines + 
     "\n}";
 
 const BOLD_GREEN = "\x1b[32;1m";
-console.log(BOLD_GREEN, "-------------------- YOU CAN COPY THE O1JS ZK REGEX CIRCUIT BELOW --------------------\x1b[0m")
+console.log(BOLD_GREEN, "-------------------- YOU CAN COPY THE O1JS ZK REGEX CIRCUIT BELOW --------------------\x1b[0m");
 console.log(functionString);
