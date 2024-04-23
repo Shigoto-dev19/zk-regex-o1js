@@ -2,7 +2,7 @@
 //TODO Add substring transition extractor
 //TODO Add option to use raw transition or extractor
 //TODO Refactor is_substr calculation
-//TODO fix occurence compiler code when regex ends with repetition operator +
+//TODO Fix occurence compiler code when regex ends with repetition operator +
 
 import { 
     parseRawRegex, 
@@ -13,7 +13,6 @@ type StateTransition = {
     type: string;
     transition: Record<string, number>;
 };
-
 class ExtendedSet<T> extends Set<T> {
     isSuperset(subset: Set<T>): boolean {
         if (this.size === 0) {
@@ -290,6 +289,7 @@ function substring_lines(substrDefsArray: [number, number][][]): string {
         const numDefs = defs.length;
         let includes_accept = defs.flat().includes(accept_node);
         let bound_accept = includes_accept ? '' : ' - 1';
+        let includes_start = defs.flat().includes(0);
         
         reveal += `\n\n\t// the ${idx}-th substring transitions: ${JSON.stringify(defs)}\n`;
         reveal += `\tconst is_reveal${idx}: Bool[] = [];\n`;
@@ -307,13 +307,14 @@ function substring_lines(substrDefsArray: [number, number][][]): string {
         reveal += `\t\tis_reveal${idx}[i] = is_substr${idx}[i][${numDefs}].and(is_consecutive[i][1]);\n`;
         reveal += `\t\treveal${idx}[i] = input[i+1].mul(is_reveal${idx}[i].toField());\n`;
         reveal += "\t}\n";
+        reveal += includes_start ? `\treveal${idx}.unshift(input[0].mul(states[1][1].toField()));\n` : '';
         reveal += `\treveal.push(reveal${idx});`;
     }
 
     return reveal
 }
 
-const revealedTransitions: [number, number][][] = [[[4, 5], [5, 5]]];
+const revealedTransitions: [number, number][][] = [[[0, 1], [1, 1]]];
 
 const substringEnabled = true;
 let reveal_lines: string;
