@@ -262,10 +262,18 @@ if (occurence) {
     accept_lines.push("const out = final_state_sum[num_bytes];\n");
     // accept_lines.push("\n\treturn out;")
 } else {
-    accept_lines.push("let final_state_result = Bool(false);");
-    accept_lines.push("for (let i = 0; i <= num_bytes; i++) {");
-    accept_lines.push(`\tfinal_state_result = final_state_result.or(states[i][${accept_node}]);`);
-    accept_lines.push("}");
+    // when the regex pattern is fully repeated using the + operator - example: [a-z]+ 
+    if (graphJson.length === 2 && Object.keys(revGraph[1]).length === 2) {
+        accept_lines.push("let final_state_result = Bool(true);");
+        accept_lines.push("for (let i = 1; i <= num_bytes; i++) {");
+        accept_lines.push(`\tfinal_state_result = final_state_result.and(states[i][${accept_node}]);`);
+        accept_lines.push("}");
+    } else {
+        accept_lines.push("let final_state_result = Bool(false);");
+        accept_lines.push("for (let i = 0; i <= num_bytes; i++) {");
+        accept_lines.push(`\tfinal_state_result = final_state_result.or(states[i][${accept_node}]);`);
+        accept_lines.push("}");
+    }
     accept_lines.push("\n\tconst out = final_state_result;\n");
 }
 
