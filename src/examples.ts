@@ -758,3 +758,82 @@ function negateRegex(input: Field[]) {
 
         return { out, reveal };
 }
+
+// [^aeiou]+
+export function negateVowel(input: Field[]) {
+        const num_bytes = input.length;
+        let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);
+        let state_changed: Bool[] = Array.from({ length: num_bytes }, () => Bool(false));
+
+        states[0][0] = Bool(true);
+        for (let i = 1; i < 2; i++) {
+                states[0][i] = Bool(false);
+        }
+
+        for (let i = 0; i < num_bytes; i++) {
+                const eq0 = input[i].equals(97);
+                const eq1 = input[i].equals(101);
+                const eq2 = input[i].equals(105);
+                const eq3 = input[i].equals(111);
+                const eq4 = input[i].equals(117);
+                let multi_or0 = Bool(false);
+                multi_or0 = multi_or0.or(eq0);
+                multi_or0 = multi_or0.or(eq1);
+                multi_or0 = multi_or0.or(eq2);
+                multi_or0 = multi_or0.or(eq3);
+                multi_or0 = multi_or0.or(eq4);
+                const and0 = states[i][0].and(multi_or0.not());
+                const eq5 = input[i].equals(97);
+                const eq6 = input[i].equals(101);
+                const eq7 = input[i].equals(105);
+                const eq8 = input[i].equals(111);
+                const eq9 = input[i].equals(117);
+                let multi_or1 = Bool(false);
+                multi_or1 = multi_or1.or(eq5);
+                multi_or1 = multi_or1.or(eq6);
+                multi_or1 = multi_or1.or(eq7);
+                multi_or1 = multi_or1.or(eq8);
+                multi_or1 = multi_or1.or(eq9);
+                const and1 = states[i][1].and(multi_or1.not());
+                let multi_or2 = Bool(false);
+                multi_or2 = multi_or2.or(and0);
+                multi_or2 = multi_or2.or(and1);
+                states[i+1][1] = multi_or2;
+                state_changed[i] = state_changed[i].or(states[i+1][1]);
+                states[i+1][0] = state_changed[i].not();
+        }
+
+        let final_state_result = Bool(true);
+        for (let i = 1; i <= num_bytes; i++) {
+                final_state_result = final_state_result.and(states[i][1]);
+        }
+
+        const out = final_state_result;
+
+        const msg_bytes = num_bytes - 1;
+        const is_consecutive: Bool[][] = Array.from({ length: num_bytes }, () => []);
+        is_consecutive[msg_bytes][1] = Bool(true);
+        for (let i = 0; i < msg_bytes; i++) {
+                is_consecutive[msg_bytes-1-i][0] = states[num_bytes-i][1].and(is_consecutive[msg_bytes-i][1].not()).or(is_consecutive[msg_bytes-i][1]);
+                is_consecutive[msg_bytes-1-i][1] = state_changed[msg_bytes-i].and(is_consecutive[msg_bytes-1-i][0]);
+        }
+
+        // revealed transitions: [[[0,1],[1,1]]]
+        let reveal: Field[][] = []
+
+        // the 0-th substring transitions: [[0,1],[1,1]]
+        const is_reveal0: Bool[] = [];
+        let is_substr0: Bool[][] = Array.from({ length: msg_bytes }, () => []);
+        const reveal0: Field[] = [];
+        for (let i = 0; i < msg_bytes; i++) {
+                is_substr0[i][0] = Bool(false);
+                is_substr0[i][1] = is_substr0[i][0].or(states[i+1][0].and(states[i+2][1]));
+                is_substr0[i][2] = is_substr0[i][1].or(states[i+1][1].and(states[i+2][1]));
+                is_reveal0[i] = is_substr0[i][2].and(is_consecutive[i][1]);
+                reveal0[i] = input[i+1].mul(is_reveal0[i].toField());
+        }
+        reveal0.unshift(input[0].mul(states[1][1].toField()));
+        reveal.push(reveal0);
+
+        return { out, reveal };
+}

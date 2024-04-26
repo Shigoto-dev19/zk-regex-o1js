@@ -5,7 +5,7 @@ import {
   base64Regex, 
   minaRegex,
   negateRegex,
-  // negateVowel,
+  negateVowel,
 } from './examples';
 
 //TODO Refactor tests
@@ -62,7 +62,7 @@ function utf8BytesToString(bytes: bigint[]): string {
 }
 
 // 1=(a|b) (2=(b|c)+ )+d
-describe("Simple Regex", () => {
+describe("Simple Regex: '1=(a|b) (2=(b|c)+ )+d'", () => {
   it("should accept valid input: case 1", () => {
     const input = "1=a 2=b d";
     const paddedStr = padString(input, 64);
@@ -185,7 +185,7 @@ describe("Simple Regex", () => {
 });
 
 // ([a-zA-Z0-9._%-=]+@[a-zA-Z0-9.-]+.[a-z])
-describe("Email Regex", () => {
+describe("Email Regex: '([a-zA-Z0-9._%-=]+@[a-zA-Z0-9.-]+.[a-z])'", () => {
   describe('username', () => {
     it("should accept valid input: username is alphabetic", () => {
       const input = "marcoPollo@expertcodebolg.com";
@@ -508,7 +508,7 @@ describe("Email Regex", () => {
 });
 
 // ([a-zA-Z0-9]|\\+|/|=)+
-describe("Base64 Regex", () => {
+describe("Base64 Regex: '([a-zA-Z0-9]|\\+|/|=)+'", () => {
   it("should accept valid input: alphabetic lowercase", () => {
     const input = "jkjasldfjlskdf";
     const paddedStr = padString(input);
@@ -632,7 +632,7 @@ describe("Base64 Regex", () => {
 
 // (mina|MINA)+
 // This example demonstrates how zk-regex counts occurrences of patterns.
-describe("Mina Regex", () => {
+describe("Mina Regex: '(mina|MINA)+", () => {
   it("should find occurence of 1 'mina' pattern: case 1", () => {
     const input = "mina";
     const paddedStr = padString(input);
@@ -755,7 +755,7 @@ describe("Mina Regex", () => {
 });
 
 // a:[^abcdefghijklmnopqrstuvwxyz]+.
-describe("Negate Regex", () => {
+describe("Negate Regex: 'a:[^abcdefghijklmnopqrstuvwxyz]+.'", () => {
   it("should accept valid input: case 1", () => {
     const input = "a: ABCDEFG XYZ.";
     const paddedStr = padString(input);
@@ -850,5 +850,77 @@ describe("Negate Regex", () => {
     
     const isValid = negateRegex(paddedStr);
     expect(isValid.out).toEqual(Bool(true));
+  });
+});
+
+
+// [^aeiou]+
+describe("Negate Vowels: '[^aeiou]+'", () => {
+  it("should not accept a word that contains character 'a'", () => {
+    const input = "flag";
+    let paddedStr = padString(input);
+
+    const isValid = negateVowel(paddedStr);
+    // const revealedBytes = isValid.reveal[0].map(f => f.toBigInt());
+    // const revealedString = utf8BytesToString(revealedBytes);
+    // console.log('revealedString: ', revealedString);
+    
+    expect(isValid.out).toEqual(Bool(false));
+  });
+
+  it("should not accept a word that contains character 'e'", () => {
+    const input = "fee";
+    const paddedStr = padString(input);
+    
+    const isValid = negateVowel(paddedStr);
+    expect(isValid.out).toEqual(Bool(false));
+  });
+
+  it("should not accept character i", () => {
+    const input = "init";
+    const paddedStr = padString(input);
+    
+    const isValid = negateVowel(paddedStr);
+    expect(isValid.out).toEqual(Bool(false));
+  });
+
+  it("should not accept character o", () => {
+    const input = "ooooh";
+    const paddedStr = padString(input);
+    
+    const isValid = negateVowel(paddedStr);
+    expect(isValid.out).toEqual(Bool(false));
+  });
+
+  it("should not accept a word that contains character 'u'", () => {
+    const input = "turf";
+    let paddedStr = padString(input);
+
+    const isValid = negateVowel(paddedStr);
+    expect(isValid.out).toEqual(Bool(false));
+  });
+
+  it("should accept word without vowels", () => {
+    const input = "grr";
+    const paddedStr = padString(input);
+  
+    const isValid = negateVowel(paddedStr);
+    expect(isValid.out).toEqual(Bool(true));
+  });
+
+  it("should accept word with numbers", () => {
+    const input = "12345 678";
+    const paddedStr = padString(input);
+  
+    const isValid = negateVowel(paddedStr);
+    expect(isValid.out).toEqual(Bool(true));
+  });
+
+  it("should not accept word containing only vowels", () => {
+    const input = "aeiouaaoouii";
+    const paddedStr = padString(input);
+  
+    const isValid = negateVowel(paddedStr);
+    expect(isValid.out).toEqual(Bool(false));
   });
 });
