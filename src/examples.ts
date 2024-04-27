@@ -139,7 +139,7 @@ function simpleRegex(input: Field[]) {
         return { out, reveal };
 }
 
-// ([a-zA-Z0-9._%-=]+@[a-zA-Z0-9.-]+.[a-z]+)
+// ([a-zA-Z0-9._%-=]+@[a-zA-Z0-9-]+.[a-z]+)
 // Note: this is not the perfect regex pattern for an email: this is just for testing purposes!
 function emailRegex(input: Field[]) {
         const num_bytes = input.length;
@@ -248,17 +248,16 @@ function emailRegex(input: Field[]) {
                 const lt11 = input[i].lessThanOrEqual(122);
                 const and8 = lt10.and(lt11);
                 const eq31 = input[i].equals(45);
-                const eq32 = input[i].equals(46);
-                const eq33 = input[i].equals(48);
-                const eq34 = input[i].equals(49);
-                const eq35 = input[i].equals(50);
-                const eq36 = input[i].equals(51);
-                const eq37 = input[i].equals(52);
-                const eq38 = input[i].equals(53);
-                const eq39 = input[i].equals(54);
-                const eq40 = input[i].equals(55);
-                const eq41 = input[i].equals(56);
-                const eq42 = input[i].equals(57);
+                const eq32 = input[i].equals(48);
+                const eq33 = input[i].equals(49);
+                const eq34 = input[i].equals(50);
+                const eq35 = input[i].equals(51);
+                const eq36 = input[i].equals(52);
+                const eq37 = input[i].equals(53);
+                const eq38 = input[i].equals(54);
+                const eq39 = input[i].equals(55);
+                const eq40 = input[i].equals(56);
+                const eq41 = input[i].equals(57);
                 let multi_or3 = Bool(false);
                 multi_or3 = multi_or3.or(and7);
                 multi_or3 = multi_or3.or(and8);
@@ -273,7 +272,6 @@ function emailRegex(input: Field[]) {
                 multi_or3 = multi_or3.or(eq39);
                 multi_or3 = multi_or3.or(eq40);
                 multi_or3 = multi_or3.or(eq41);
-                multi_or3 = multi_or3.or(eq42);
                 const and9 = states[i][2].and(multi_or3);
                 const lt12 = Field(65).lessThanOrEqual(input[i]);
                 const lt13 = input[i].lessThanOrEqual(90);
@@ -281,20 +279,21 @@ function emailRegex(input: Field[]) {
                 const lt14 = Field(97).lessThanOrEqual(input[i]);
                 const lt15 = input[i].lessThanOrEqual(122);
                 const and11 = lt14.and(lt15);
-                const eq43 = input[i].equals(45);
-                const eq44 = input[i].equals(48);
-                const eq45 = input[i].equals(49);
-                const eq46 = input[i].equals(50);
-                const eq47 = input[i].equals(51);
-                const eq48 = input[i].equals(52);
-                const eq49 = input[i].equals(53);
-                const eq50 = input[i].equals(54);
-                const eq51 = input[i].equals(55);
-                const eq52 = input[i].equals(56);
-                const eq53 = input[i].equals(57);
+                const eq42 = input[i].equals(45);
+                const eq43 = input[i].equals(48);
+                const eq44 = input[i].equals(49);
+                const eq45 = input[i].equals(50);
+                const eq46 = input[i].equals(51);
+                const eq47 = input[i].equals(52);
+                const eq48 = input[i].equals(53);
+                const eq49 = input[i].equals(54);
+                const eq50 = input[i].equals(55);
+                const eq51 = input[i].equals(56);
+                const eq52 = input[i].equals(57);
                 let multi_or4 = Bool(false);
                 multi_or4 = multi_or4.or(and10);
                 multi_or4 = multi_or4.or(and11);
+                multi_or4 = multi_or4.or(eq42);
                 multi_or4 = multi_or4.or(eq43);
                 multi_or4 = multi_or4.or(eq44);
                 multi_or4 = multi_or4.or(eq45);
@@ -305,95 +304,28 @@ function emailRegex(input: Field[]) {
                 multi_or4 = multi_or4.or(eq50);
                 multi_or4 = multi_or4.or(eq51);
                 multi_or4 = multi_or4.or(eq52);
-                multi_or4 = multi_or4.or(eq53);
                 const and12 = states[i][3].and(multi_or4);
-                const lt16 = Field(65).lessThanOrEqual(input[i]);
-                const lt17 = input[i].lessThanOrEqual(90);
-                const and13 = lt16.and(lt17);
-                const eq54 = input[i].equals(45);
-                const eq55 = input[i].equals(48);
-                const eq56 = input[i].equals(49);
-                const eq57 = input[i].equals(50);
-                const eq58 = input[i].equals(51);
-                const eq59 = input[i].equals(52);
-                const eq60 = input[i].equals(53);
-                const eq61 = input[i].equals(54);
-                const eq62 = input[i].equals(55);
-                const eq63 = input[i].equals(56);
-                const eq64 = input[i].equals(57);
                 let multi_or5 = Bool(false);
-                multi_or5 = multi_or5.or(and13);
-                multi_or5 = multi_or5.or(eq54);
-                multi_or5 = multi_or5.or(eq55);
-                multi_or5 = multi_or5.or(eq56);
-                multi_or5 = multi_or5.or(eq57);
-                multi_or5 = multi_or5.or(eq58);
-                multi_or5 = multi_or5.or(eq59);
-                multi_or5 = multi_or5.or(eq60);
-                multi_or5 = multi_or5.or(eq61);
-                multi_or5 = multi_or5.or(eq62);
-                multi_or5 = multi_or5.or(eq63);
-                multi_or5 = multi_or5.or(eq64);
-                const and14 = states[i][4].and(multi_or5);
-                const lt18 = Field(65).lessThanOrEqual(input[i]);
-                const lt19 = input[i].lessThanOrEqual(90);
-                const and15 = lt18.and(lt19);
-                const eq65 = input[i].equals(45);
-                const eq66 = input[i].equals(48);
-                const eq67 = input[i].equals(49);
-                const eq68 = input[i].equals(50);
-                const eq69 = input[i].equals(51);
-                const eq70 = input[i].equals(52);
-                const eq71 = input[i].equals(53);
-                const eq72 = input[i].equals(54);
-                const eq73 = input[i].equals(55);
-                const eq74 = input[i].equals(56);
-                const eq75 = input[i].equals(57);
+                multi_or5 = multi_or5.or(and9);
+                multi_or5 = multi_or5.or(and12);
+                states[i+1][3] = multi_or5;
+                state_changed[i] = state_changed[i].or(states[i+1][3]);
+                const eq53 = input[i].equals(46);
+                const and13 = states[i][3].and(eq53);
+                states[i+1][4] = and13;
+                state_changed[i] = state_changed[i].or(states[i+1][4]);
+                const lt16 = Field(97).lessThanOrEqual(input[i]);
+                const lt17 = input[i].lessThanOrEqual(122);
+                const and14 = lt16.and(lt17);
+                const and15 = states[i][4].and(and14);
+                const lt18 = Field(97).lessThanOrEqual(input[i]);
+                const lt19 = input[i].lessThanOrEqual(122);
+                const and16 = lt18.and(lt19);
+                const and17 = states[i][5].and(and16);
                 let multi_or6 = Bool(false);
                 multi_or6 = multi_or6.or(and15);
-                multi_or6 = multi_or6.or(eq65);
-                multi_or6 = multi_or6.or(eq66);
-                multi_or6 = multi_or6.or(eq67);
-                multi_or6 = multi_or6.or(eq68);
-                multi_or6 = multi_or6.or(eq69);
-                multi_or6 = multi_or6.or(eq70);
-                multi_or6 = multi_or6.or(eq71);
-                multi_or6 = multi_or6.or(eq72);
-                multi_or6 = multi_or6.or(eq73);
-                multi_or6 = multi_or6.or(eq74);
-                multi_or6 = multi_or6.or(eq75);
-                const and16 = states[i][5].and(multi_or6);
-                let multi_or7 = Bool(false);
-                multi_or7 = multi_or7.or(and9);
-                multi_or7 = multi_or7.or(and12);
-                multi_or7 = multi_or7.or(and14);
-                multi_or7 = multi_or7.or(and16);
-                states[i+1][3] = multi_or7;
-                state_changed[i] = state_changed[i].or(states[i+1][3]);
-                const eq76 = input[i].equals(46);
-                const and17 = states[i][3].and(eq76);
-                const eq77 = input[i].equals(46);
-                const and18 = states[i][4].and(eq77);
-                const eq78 = input[i].equals(46);
-                const and19 = states[i][5].and(eq78);
-                let multi_or8 = Bool(false);
-                multi_or8 = multi_or8.or(and17);
-                multi_or8 = multi_or8.or(and18);
-                multi_or8 = multi_or8.or(and19);
-                states[i+1][4] = multi_or8;
-                state_changed[i] = state_changed[i].or(states[i+1][4]);
-                const lt20 = Field(97).lessThanOrEqual(input[i]);
-                const lt21 = input[i].lessThanOrEqual(122);
-                const and20 = lt20.and(lt21);
-                const and21 = states[i][4].and(and20);
-                const lt22 = Field(97).lessThanOrEqual(input[i]);
-                const lt23 = input[i].lessThanOrEqual(122);
-                const and22 = lt22.and(lt23);
-                const and23 = states[i][5].and(and22);
-                let multi_or9 = Bool(false);
-                multi_or9 = multi_or9.or(and21);
-                multi_or9 = multi_or9.or(and23);
-                states[i+1][5] = multi_or9;
+                multi_or6 = multi_or6.or(and17);
+                states[i+1][5] = multi_or6;
                 state_changed[i] = state_changed[i].or(states[i+1][5]);
                 states[i+1][0] = state_changed[i].not();
         }
@@ -414,7 +346,7 @@ function emailRegex(input: Field[]) {
         }
 
         // revealed transitions: [[[0,1],[1,1]],[[2,3],[3,3]],[[4,5],[5,5]]]
-        let reveal: Field[][] = []
+        let reveal: Field[][] = [];
 
         // the 0-th substring transitions: [[0,1],[1,1]]
         const is_reveal0: Bool[] = [];
@@ -458,7 +390,6 @@ function emailRegex(input: Field[]) {
 
         return { out, reveal };
 }
-
 // ([a-zA-Z0-9]|\\+|/|=)+
 function base64Regex(input: Field[]) {
         const num_bytes = input.length;
@@ -659,24 +590,42 @@ function minaRegex(input: Field[]) {
                 is_consecutive[msg_bytes-1-i][1] = state_changed[msg_bytes-i].and(is_consecutive[msg_bytes-1-i][0]);
         }
 
-        // revealed transitions: [[[0,2],[2,4],[4,6],[6,7]]]
-        let reveal: Field[][] = []
+        // revealed transitions: [[[0,2],[7,2],[2,4],[4,6],[6,7]],[[0,1],[7,1],[1,3],[3,5],[5,7]]]
+        let reveal: Field[][] = [];
 
-        // the 0-th substring transitions: [[0,2],[2,4],[4,6],[6,7]]
+        // the 0-th substring transitions: [[0,2],[7,2],[2,4],[4,6],[6,7]]
         const is_reveal0: Bool[] = [];
         let is_substr0: Bool[][] = Array.from({ length: msg_bytes }, () => []);
         const reveal0: Field[] = [];
         for (let i = 0; i < msg_bytes; i++) {
                 is_substr0[i][0] = Bool(false);
                 is_substr0[i][1] = is_substr0[i][0].or(states[i+1][0].and(states[i+2][2]));
-                is_substr0[i][2] = is_substr0[i][1].or(states[i+1][2].and(states[i+2][4]));
-                is_substr0[i][3] = is_substr0[i][2].or(states[i+1][4].and(states[i+2][6]));
-                is_substr0[i][4] = is_substr0[i][3].or(states[i+1][6].and(states[i+2][7]));
-                is_reveal0[i] = is_substr0[i][4].and(is_consecutive[i][1]);
+                is_substr0[i][2] = is_substr0[i][1].or(states[i+1][7].and(states[i+2][2]));
+                is_substr0[i][3] = is_substr0[i][2].or(states[i+1][2].and(states[i+2][4]));
+                is_substr0[i][4] = is_substr0[i][3].or(states[i+1][4].and(states[i+2][6]));
+                is_substr0[i][5] = is_substr0[i][4].or(states[i+1][6].and(states[i+2][7]));
+                is_reveal0[i] = is_substr0[i][5].and(is_consecutive[i][1]);
                 reveal0[i] = input[i+1].mul(is_reveal0[i].toField());
         }
-        reveal0.unshift(input[0].mul(states[1][1].toField()));
+        reveal0.unshift(input[0].mul(states[1][2].toField()));
         reveal.push(reveal0);
+
+        // the 1-th substring transitions: [[0,1],[7,1],[1,3],[3,5],[5,7]]
+        const is_reveal1: Bool[] = [];
+        let is_substr1: Bool[][] = Array.from({ length: msg_bytes }, () => []);
+        const reveal1: Field[] = [];
+        for (let i = 0; i < msg_bytes; i++) {
+                is_substr1[i][0] = Bool(false);
+                is_substr1[i][1] = is_substr1[i][0].or(states[i+1][0].and(states[i+2][1]));
+                is_substr1[i][2] = is_substr1[i][1].or(states[i+1][7].and(states[i+2][1]));
+                is_substr1[i][3] = is_substr1[i][2].or(states[i+1][1].and(states[i+2][3]));
+                is_substr1[i][4] = is_substr1[i][3].or(states[i+1][3].and(states[i+2][5]));
+                is_substr1[i][5] = is_substr1[i][4].or(states[i+1][5].and(states[i+2][7]));
+                is_reveal1[i] = is_substr1[i][5].and(is_consecutive[i][1]);
+                reveal1[i] = input[i+1].mul(is_reveal1[i].toField());
+        }
+        reveal1.unshift(input[0].mul(states[1][1].toField()));
+        reveal.push(reveal1);
 
         return { out, reveal };
 }
