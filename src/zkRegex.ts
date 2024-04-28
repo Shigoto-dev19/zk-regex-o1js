@@ -1,41 +1,22 @@
 //TODO Declare state_changed outside of the loop declaration
-//TODO Add substring transition extractor
 //TODO Add option to use raw transition or extractor
 //TODO Refactor is_substr calculation
-//TODO Fix occurence compiler code when regex ends with repetition operator +
+//TODO Fix occurence compiler code when regex ends withrepetition operator +
+//TODO Add option to only reveal bytes if valid is true
+//TODO organize zkRegex into a class
+// TODO Add the option to reveal substrings based on search functions .i.e. isDigit, isNumber etc...
 
 import { 
     parseRawRegex, 
     generateMinDfaGraph, 
+    GraphTransition,
 } from "./regexToDfa.js";
 
-type StateTransition = {
-    type: string;
-    transition: Record<string, number>;
-};
-class ExtendedSet<T> extends Set<T> {
-    isSuperset(subset: Set<T>): boolean {
-        if (this.size === 0) {
-            return false;
-        }
-        for (let elem of subset) {
-            if (!this.has(elem)) {
-                return false;
-            }
-        }
-        return true;
-    }
 
-    difference(setB: Set<T>): void {
-        for (let elem of setB) {
-            this.delete(elem);
-        }
-    }
-}
 
 const rawRegex = process.argv[2] ?? "1=(a|b) (2=(b|c)+ )+d";
 const expandedRegex = parseRawRegex(rawRegex);
-const graphJson: StateTransition[] = JSON.parse(generateMinDfaGraph(expandedRegex));
+const graphJson: GraphTransition[] = JSON.parse(generateMinDfaGraph(expandedRegex));
 
 const N = graphJson.length;
 
@@ -44,10 +25,11 @@ const graph: Record<number, number[]>  = Array.from({ length: N }, () => ([]));
 
 // Incoming Nodes
 const revGraph: Record<number, Record<number, number[]>> = Array.from({ length: N }, () => ({}));
+const revGraphString: Record<number, Record<number, string>> = Array.from({ length: N }, () => ({}));
 
 const acceptNodes: Set<number> = new Set();
 
-let init_going_state = null;
+let init_going_state: null | number = null;
 
 for (let i = 0; i < N; i++) {
     const currentNode = graphJson[i];
@@ -55,6 +37,7 @@ for (let i = 0; i < N; i++) {
         const v = currentNode.transition[k];
         const charBytes = k.split(',').map((c: string) => c.charCodeAt(0));
         revGraph[v][i] = charBytes;
+        revGraphString[v][i] = k;
         if (i === 0) {
             const index = revGraph[v][i].indexOf(94);
             if (index !== -1) {
@@ -113,7 +96,7 @@ for (let i = 1; i < N; i++) {
         const k = revGraph[i][Number(prev_i)];
         k.sort((a, b) => a - b);
         const eq_outputs: Array<[string, number]> = [];
-        let vals = new ExtendedSet(k);
+        let vals = new Set(k);
         let is_negate = false;
         if (vals.has(0xff)) {
             vals.delete(0xff);
@@ -260,7 +243,7 @@ if (occurence) {
     accept_lines.push(`\tfinal_state_sum[i] = final_state_sum[i-1].add(states[i][${accept_node}].toField());`);
     accept_lines.push("}");
     accept_lines.push("const out = final_state_sum[num_bytes];\n");
-    // accept_lines.push("\n\treturn out;")
+    // accept_lines.push("\n\treturn out;");
 } else {
     // when the regex pattern is fully repeated using the + operator - example: [a-z]+ 
     if (graphJson.length === 2 && Object.keys(revGraph[1]).length === 2) {
@@ -290,15 +273,17 @@ function substring_lines(substrDefsArray: [number, number][][]): string {
     reveal += "\t\tis_consecutive[msg_bytes-1-i][1] = state_changed[msg_bytes-i].and(is_consecutive[msg_bytes-1-i][0]);\n";
     reveal += "\t}\n\n";
     reveal += `\t// revealed transitions: ${JSON.stringify(substrDefsArray)}\n`;
-    reveal += `\tlet reveal: Field[][] = []`
+    reveal += `\tlet reveal: Field[][] = [];`
 
     for (let idx = 0; idx < substrDefsArray.length; idx++) {
         const defs = substrDefsArray[idx];
         const numDefs = defs.length;
+
         let includes_accept = defs.flat().includes(accept_node);
         let bound_accept = includes_accept ? '' : ' - 1';
         let includes_start = defs.flat().includes(0);
-        
+        const startIndex = defs.find(sub => sub.includes(0))?.[1];
+       
         reveal += `\n\n\t// the ${idx}-th substring transitions: ${JSON.stringify(defs)}\n`;
         reveal += `\tconst is_reveal${idx}: Bool[] = [];\n`;
         reveal += `\tlet is_substr${idx}: Bool[][] = Array.from({ length: msg_bytes }, () => []);\n`;
@@ -315,14 +300,15 @@ function substring_lines(substrDefsArray: [number, number][][]): string {
         reveal += `\t\tis_reveal${idx}[i] = is_substr${idx}[i][${numDefs}].and(is_consecutive[i][1]);\n`;
         reveal += `\t\treveal${idx}[i] = input[i+1].mul(is_reveal${idx}[i].toField());\n`;
         reveal += "\t}\n";
-        reveal += includes_start ? `\treveal${idx}.unshift(input[0].mul(states[1][1].toField()));\n` : '';
+        reveal += includes_start ? `\treveal${idx}.unshift(input[0].mul(states[1][${startIndex}].toField()));\n` : '';
         reveal += `\treveal.push(reveal${idx});`;
     }
-
-    return reveal
+    
+    return reveal;
 }
 
-const revealedTransitions: [number, number][][] = [[[0, 1], [1, 1]]];
+// substring_lines [[[2, 3]], [[6, 7], [7, 7]], [[8, 9]]]
+const revealedTransitions: [number, number][][] = [[[0, 1], [2, 3]], [[6, 7], [7, 7]], [[8, 9]]];
 
 const substringEnabled = true;
 let reveal_lines: string;
