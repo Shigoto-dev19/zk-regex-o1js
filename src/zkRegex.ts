@@ -4,7 +4,7 @@
 //TODO Fix occurence compiler code when regex ends withrepetition operator +
 //TODO Add option to only reveal bytes if valid is true
 //TODO organize zkRegex into a class
-// TODO Add the option to reveal substrings based on search functions .i.e. isDigit, isNumber etc...
+//TODO Add the option to reveal substrings based on search functions .i.e. isDigit, isNumber etc...
 
 import { 
     parseRawRegex, 
@@ -85,6 +85,12 @@ let lt_i = 0;
 let and_i = 0;
 let multi_or_i = 0;
 
+const range_checks = new Array(256);
+for (let i = 0; i < 256; i++) {
+    range_checks[i] = new Array(256);
+}
+const eq_checks = new Array(256);
+
 let lines: string[] = [];
 
 lines.push("for (let i = 0; i < num_bytes; i++) {");
@@ -149,22 +155,36 @@ for (let i = 1; i < N; i++) {
         
         // refactored the code from below when handling lower & upper alphabetic and digits
         for (let min_max of min_maxes) {
-            lines.push(`\tconst lt${lt_i} = Field(${min_max[0]}).lessThanOrEqual(input[i]);`);
+            const min = min_max[0];
+            const max = min_max[1];
+            if (range_checks[min][max] === undefined) {
+                lines.push(`\tconst lt${lt_i} = Field(${min}).lessThanOrEqual(input[i]);`);
 
-            lines.push(`\tconst lt${lt_i+1} = input[i].lessThanOrEqual(${min_max[1]});`);
+                lines.push(`\tconst lt${lt_i + 1} = input[i].lessThanOrEqual(${max});`);
 
-            lines.push(`\tconst and${and_i} = lt${lt_i}.and(lt${lt_i+1});`);
+                lines.push(`\tconst and${and_i} = lt${lt_i}.and(lt${lt_i + 1});`);
 
-            eq_outputs.push(['and', and_i]);
-            lt_i += 2
-            and_i += 1
+                eq_outputs.push(['and', and_i]);
+                range_checks[min][max] = [lt_i, and_i];
+                lt_i += 2;
+                and_i += 1;
+            } else {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                let [_, and_i] = range_checks[min][max];
+                eq_outputs.push(['and', and_i]);
+            }
         }
 
         for (let code of vals) {
-            lines.push(`\tconst eq${eq_i} = input[i].equals(${code});`);
-            
-            eq_outputs.push(['eq', eq_i]);
-            eq_i += 1;
+            if (eq_checks[code] === undefined) {
+                lines.push(`\tconst eq${eq_i} = input[i].equals(${code});`);
+                
+                eq_outputs.push(['eq', eq_i]);
+                eq_checks[code] = eq_i;
+                eq_i += 1;
+            } else {
+                eq_outputs.push(['eq', eq_checks[code]]);
+            }
         }
 
         if (eq_outputs.length === 1) {
