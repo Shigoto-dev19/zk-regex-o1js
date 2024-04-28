@@ -90,6 +90,8 @@ for (let i = 0; i < 256; i++) {
     range_checks[i] = new Array(256);
 }
 const eq_checks = new Array(256);
+const multi_or_checks1: Record<string, string> = {};
+const multi_or_checks2: Record<string, string> = {};
 
 let lines: string[] = [];
 
@@ -186,7 +188,6 @@ for (let i = 1; i < N; i++) {
                 eq_outputs.push(['eq', eq_checks[code]]);
             }
         }
-
         if (eq_outputs.length === 1) {
             if (is_negate) {
                 lines.push(`\tconst and${and_i} = states[i][${prev_i}].and(${eq_outputs[0][0]}${eq_outputs[0][1]}.not());`);
@@ -194,17 +195,30 @@ for (let i = 1; i < N; i++) {
                 lines.push(`\tconst and${and_i} = states[i][${prev_i}].and(${eq_outputs[0][0]}${eq_outputs[0][1]});`);  
             }
         } else if (eq_outputs.length > 1) {
+            const eq_outputs_key = JSON.stringify(eq_outputs);
+            if (multi_or_checks1[eq_outputs_key] === undefined) {
+            lines.push(`\tlet multi_or${multi_or_i} = Bool(false);`);
             lines.push(`\tlet multi_or${multi_or_i} = Bool(false);`);
 
-            for (let output_i = 0; output_i < eq_outputs.length; output_i++) {
-                lines.push(`\tmulti_or${multi_or_i} = multi_or${multi_or_i}.or(${eq_outputs[output_i][0]}${eq_outputs[output_i][1]});`);
-            }
-            if (is_negate) {
-                lines.push(`\tconst and${and_i} = states[i][${prev_i}].and(multi_or${multi_or_i}.not());`);
+                lines.push(`\tlet multi_or${multi_or_i} = Bool(false);`);
+
+                for (let output_i = 0; output_i < eq_outputs.length; output_i++) {
+                    lines.push(`\tmulti_or${multi_or_i} = multi_or${multi_or_i}.or(${eq_outputs[output_i][0]}${eq_outputs[output_i][1]});`);
+                }
+                if (is_negate) {
+                    lines.push(`\tconst and${and_i} = states[i][${prev_i}].and(multi_or${multi_or_i}.not());`);
+                } else {
+                    lines.push(`\tconst and${and_i} = states[i][${prev_i}].and(multi_or${multi_or_i});`);
+                }
+                multi_or_checks1[eq_outputs_key] = multi_or_i.toString();
+                multi_or_i += 1;
             } else {
-                lines.push(`\tconst and${and_i} = states[i][${prev_i}].and(multi_or${multi_or_i});`);
+                if (is_negate) {
+                    lines.push(`\tconst and${and_i} = states[i][${prev_i}].and(multi_or${multi_or_checks1[eq_outputs_key]}.not());`);
+                } else {
+                    lines.push(`\tconst and${and_i} = states[i][${prev_i}].and(multi_or${multi_or_checks1[eq_outputs_key]});`);
+                }    
             }
-            multi_or_i += 1;
         }
 
         outputs.push(and_i);
@@ -214,12 +228,18 @@ for (let i = 1; i < N; i++) {
     if (outputs.length === 1) {    
         lines.push(`\tstates[i+1][${i}] = and${outputs[0]};`);
     } else if (outputs.length > 1) {
-        lines.push(`\tlet multi_or${multi_or_i} = Bool(false);`);
-        for (let output_i = 0; output_i < outputs.length; output_i++) {
-            lines.push(`\tmulti_or${multi_or_i} = multi_or${multi_or_i}.or(and${outputs[output_i]});`);                            
-        }
-        lines.push(`\tstates[i+1][${i}] = multi_or${multi_or_i};`);
-        multi_or_i += 1
+        const outputs_key = JSON.stringify(outputs);
+        if (multi_or_checks2[outputs_key] === undefined) {
+            lines.push(`\tlet multi_or${multi_or_i} = Bool(false);`);
+            for (let output_i = 0; output_i < outputs.length; output_i++) {
+                lines.push(`\tmulti_or${multi_or_i} = multi_or${multi_or_i}.or(and${outputs[output_i]});`);                            
+            }
+            lines.push(`\tstates[i+1][${i}] = multi_or${multi_or_i};`);
+            multi_or_checks2[outputs_key] = multi_or_i.toString();
+            multi_or_i += 1;
+        } else {
+            lines.push(`\tstates[i+1][${i}] = multi_or${multi_or_checks2[outputs_key]};`);
+        } 
     }
     lines.push(`\tstate_changed[i] = state_changed[i].or(states[i+1][${i}]);`);
 }

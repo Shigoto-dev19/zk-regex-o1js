@@ -8,7 +8,7 @@ export {
         negateRegex,
 }
 
-// 1=(a|b) (2=(b|c)+ )+d
+// "1=(a|b) (2=(b|c)+ )+d" & revealing ['(a|b)', '(b|c)', 'd']
 function simpleRegex(input: Field[]) {
         const num_bytes = input.length;
         let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);
@@ -56,14 +56,11 @@ function simpleRegex(input: Field[]) {
                 multi_or2 = multi_or2.or(eq3);
                 multi_or2 = multi_or2.or(eq6);
                 const and7 = states[i][6].and(multi_or2);
+                const and8 = states[i][7].and(multi_or2);
                 let multi_or3 = Bool(false);
-                multi_or3 = multi_or3.or(eq3);
-                multi_or3 = multi_or3.or(eq6);
-                const and8 = states[i][7].and(multi_or3);
-                let multi_or4 = Bool(false);
-                multi_or4 = multi_or4.or(and7);
-                multi_or4 = multi_or4.or(and8);
-                states[i+1][7] = multi_or4;
+                multi_or3 = multi_or3.or(and7);
+                multi_or3 = multi_or3.or(and8);
+                states[i+1][7] = multi_or3;
                 state_changed[i] = state_changed[i].or(states[i+1][7]);
                 const and9 = states[i][7].and(eq4);
                 states[i+1][8] = and9;
@@ -133,7 +130,7 @@ function simpleRegex(input: Field[]) {
         return { out, reveal };
 }
 
-// ([a-zA-Z0-9._%-=]+@[a-zA-Z0-9-]+.[a-z]+)
+// "([a-zA-Z0-9._%-=]+@[a-zA-Z0-9-]+.[a-z]+)" & revealing ['[a-zA-Z0-9._%-=]', '[a-zA-Z0-9-]', '[a-z]']
 // Note: this is not the perfect regex pattern for an email: this is just for testing purposes!
 function emailRegex(input: Field[]) {
         const num_bytes = input.length;
@@ -186,78 +183,46 @@ function emailRegex(input: Field[]) {
                 multi_or0 = multi_or0.or(eq13);
                 multi_or0 = multi_or0.or(eq14);
                 const and2 = states[i][0].and(multi_or0);
+                const and3 = states[i][1].and(multi_or0);
                 let multi_or1 = Bool(false);
-                multi_or1 = multi_or1.or(and0);
-                multi_or1 = multi_or1.or(and1);
-                multi_or1 = multi_or1.or(eq0);
-                multi_or1 = multi_or1.or(eq1);
-                multi_or1 = multi_or1.or(eq2);
-                multi_or1 = multi_or1.or(eq3);
-                multi_or1 = multi_or1.or(eq4);
-                multi_or1 = multi_or1.or(eq5);
-                multi_or1 = multi_or1.or(eq6);
-                multi_or1 = multi_or1.or(eq7);
-                multi_or1 = multi_or1.or(eq8);
-                multi_or1 = multi_or1.or(eq9);
-                multi_or1 = multi_or1.or(eq10);
-                multi_or1 = multi_or1.or(eq11);
-                multi_or1 = multi_or1.or(eq12);
-                multi_or1 = multi_or1.or(eq13);
-                multi_or1 = multi_or1.or(eq14);
-                const and3 = states[i][1].and(multi_or1);
-                let multi_or2 = Bool(false);
-                multi_or2 = multi_or2.or(and2);
-                multi_or2 = multi_or2.or(and3);
-                states[i+1][1] = multi_or2;
+                multi_or1 = multi_or1.or(and2);
+                multi_or1 = multi_or1.or(and3);
+                states[i+1][1] = multi_or1;
                 state_changed[i] = state_changed[i].or(states[i+1][1]);
                 const eq15 = input[i].equals(64);
                 const and4 = states[i][1].and(eq15);
                 states[i+1][2] = and4;
                 state_changed[i] = state_changed[i].or(states[i+1][2]);
+                let multi_or2 = Bool(false);
+                multi_or2 = multi_or2.or(and0);
+                multi_or2 = multi_or2.or(and1);
+                multi_or2 = multi_or2.or(eq1);
+                multi_or2 = multi_or2.or(eq3);
+                multi_or2 = multi_or2.or(eq4);
+                multi_or2 = multi_or2.or(eq5);
+                multi_or2 = multi_or2.or(eq6);
+                multi_or2 = multi_or2.or(eq7);
+                multi_or2 = multi_or2.or(eq8);
+                multi_or2 = multi_or2.or(eq9);
+                multi_or2 = multi_or2.or(eq10);
+                multi_or2 = multi_or2.or(eq11);
+                multi_or2 = multi_or2.or(eq12);
+                const and5 = states[i][2].and(multi_or2);
+                const and6 = states[i][3].and(multi_or2);
                 let multi_or3 = Bool(false);
-                multi_or3 = multi_or3.or(and0);
-                multi_or3 = multi_or3.or(and1);
-                multi_or3 = multi_or3.or(eq1);
-                multi_or3 = multi_or3.or(eq3);
-                multi_or3 = multi_or3.or(eq4);
-                multi_or3 = multi_or3.or(eq5);
-                multi_or3 = multi_or3.or(eq6);
-                multi_or3 = multi_or3.or(eq7);
-                multi_or3 = multi_or3.or(eq8);
-                multi_or3 = multi_or3.or(eq9);
-                multi_or3 = multi_or3.or(eq10);
-                multi_or3 = multi_or3.or(eq11);
-                multi_or3 = multi_or3.or(eq12);
-                const and5 = states[i][2].and(multi_or3);
-                let multi_or4 = Bool(false);
-                multi_or4 = multi_or4.or(and0);
-                multi_or4 = multi_or4.or(and1);
-                multi_or4 = multi_or4.or(eq1);
-                multi_or4 = multi_or4.or(eq3);
-                multi_or4 = multi_or4.or(eq4);
-                multi_or4 = multi_or4.or(eq5);
-                multi_or4 = multi_or4.or(eq6);
-                multi_or4 = multi_or4.or(eq7);
-                multi_or4 = multi_or4.or(eq8);
-                multi_or4 = multi_or4.or(eq9);
-                multi_or4 = multi_or4.or(eq10);
-                multi_or4 = multi_or4.or(eq11);
-                multi_or4 = multi_or4.or(eq12);
-                const and6 = states[i][3].and(multi_or4);
-                let multi_or5 = Bool(false);
-                multi_or5 = multi_or5.or(and5);
-                multi_or5 = multi_or5.or(and6);
-                states[i+1][3] = multi_or5;
+                multi_or3 = multi_or3.or(and5);
+                multi_or3 = multi_or3.or(and6);
+                states[i+1][3] = multi_or3;
                 state_changed[i] = state_changed[i].or(states[i+1][3]);
                 const and7 = states[i][3].and(eq2);
                 states[i+1][4] = and7;
                 state_changed[i] = state_changed[i].or(states[i+1][4]);
                 const and8 = states[i][4].and(and1);
                 const and9 = states[i][5].and(and1);
-                let multi_or6 = Bool(false);
-                multi_or6 = multi_or6.or(and8);
-                multi_or6 = multi_or6.or(and9);
-                states[i+1][5] = multi_or6;
+                let multi_or4 = Bool(false);
+                multi_or4 = multi_or4.or(and8);
+                multi_or4 = multi_or4.or(and9);
+                states[i+1][5] = multi_or4;
                 state_changed[i] = state_changed[i].or(states[i+1][5]);
                 states[i+1][0] = state_changed[i].not();
         }
@@ -323,7 +288,7 @@ function emailRegex(input: Field[]) {
         return { out, reveal };
 }
 
-// ([a-zA-Z0-9]|\\+|/|=)+
+// ([a-zA-Z0-9]|\\+|/|=)+ & revealing all
 function base64Regex(input: Field[]) {
         const num_bytes = input.length;
         let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);
@@ -371,27 +336,11 @@ function base64Regex(input: Field[]) {
                 multi_or0 = multi_or0.or(eq11);
                 multi_or0 = multi_or0.or(eq12);
                 const and2 = states[i][0].and(multi_or0);
+                const and3 = states[i][1].and(multi_or0);
                 let multi_or1 = Bool(false);
-                multi_or1 = multi_or1.or(and0);
-                multi_or1 = multi_or1.or(and1);
-                multi_or1 = multi_or1.or(eq0);
-                multi_or1 = multi_or1.or(eq1);
-                multi_or1 = multi_or1.or(eq2);
-                multi_or1 = multi_or1.or(eq3);
-                multi_or1 = multi_or1.or(eq4);
-                multi_or1 = multi_or1.or(eq5);
-                multi_or1 = multi_or1.or(eq6);
-                multi_or1 = multi_or1.or(eq7);
-                multi_or1 = multi_or1.or(eq8);
-                multi_or1 = multi_or1.or(eq9);
-                multi_or1 = multi_or1.or(eq10);
-                multi_or1 = multi_or1.or(eq11);
-                multi_or1 = multi_or1.or(eq12);
-                const and3 = states[i][1].and(multi_or1);
-                let multi_or2 = Bool(false);
-                multi_or2 = multi_or2.or(and2);
-                multi_or2 = multi_or2.or(and3);
-                states[i+1][1] = multi_or2;
+                multi_or1 = multi_or1.or(and2);
+                multi_or1 = multi_or1.or(and3);
+                states[i+1][1] = multi_or1;
                 state_changed[i] = state_changed[i].or(states[i+1][1]);
                 states[i+1][0] = state_changed[i].not();
         }
@@ -431,7 +380,7 @@ function base64Regex(input: Field[]) {
         return { out, reveal };
 }
 
-// (mina|MINA)+
+// "(mina|MINA)+" & revealing ['mina', 'MINA']
 function minaRegex(input: Field[]) {
         const num_bytes = input.length;
         let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);
@@ -542,7 +491,7 @@ function minaRegex(input: Field[]) {
         return { out, reveal };
 }
 
-// a:[^abcdefghijklmnopqrstuvwxyz]+.
+// "a:[^abcdefghijklmnopqrstuvwxyz]+." & revealing ['[^abcdefghijklmnopqrstuvwxyz]']
 function negateRegex(input: Field[]) {
         const num_bytes = input.length;
         let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);
@@ -616,7 +565,7 @@ function negateRegex(input: Field[]) {
         return { out, reveal };
 }
 
-// [^aeiou]+
+// "[^aeiou]+" & revealing all
 export function negateVowel(input: Field[]) {
         const num_bytes = input.length;
         let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);
@@ -640,17 +589,11 @@ export function negateVowel(input: Field[]) {
                 multi_or0 = multi_or0.or(eq3);
                 multi_or0 = multi_or0.or(eq4);
                 const and0 = states[i][0].and(multi_or0.not());
+                const and1 = states[i][1].and(multi_or0.not());
                 let multi_or1 = Bool(false);
-                multi_or1 = multi_or1.or(eq0);
-                multi_or1 = multi_or1.or(eq1);
-                multi_or1 = multi_or1.or(eq2);
-                multi_or1 = multi_or1.or(eq3);
-                multi_or1 = multi_or1.or(eq4);
-                const and1 = states[i][1].and(multi_or1.not());
-                let multi_or2 = Bool(false);
-                multi_or2 = multi_or2.or(and0);
-                multi_or2 = multi_or2.or(and1);
-                states[i+1][1] = multi_or2;
+                multi_or1 = multi_or1.or(and0);
+                multi_or1 = multi_or1.or(and1);
+                states[i+1][1] = multi_or1;
                 state_changed[i] = state_changed[i].or(states[i+1][1]);
                 states[i+1][0] = state_changed[i].not();
         }
