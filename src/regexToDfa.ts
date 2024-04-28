@@ -5,6 +5,7 @@ import { State, regexToNfa, nfaToDfa, minDfa } from "./lexical.js";
 export {
   parseRawRegex, 
   generateMinDfaGraph, 
+  GraphTransition,
 }
 
 type GraphState = { 
@@ -18,6 +19,11 @@ type GraphState = {
   nature?: number
   transition?: Record<string, number>
 }
+
+type GraphTransition = {
+  type: string;
+  transition: Record<string, number>;
+};
 
 /// Helper regex components: Contains constants can be used in your code for various purposes such as regex patterns and character validations.
 
@@ -74,20 +80,22 @@ const slash_s = whitespace.join("|");
  * @param {string} rawRegex The raw regex string to parse.
  * @returns {string} The expanded parsed regex.
  */
-function parseRawRegex(rawRegex: string) {
+function parseRawRegex(rawRegex: string, logsEnabled=true) {
   // console.log(format_regex_printable(rawRegex));
   
   // Bold blue color for console output
   const BOLD_BLUE = "\x1b[34;1m";
   
   // Print input raw regex
-  console.log(BOLD_BLUE, 'INPUT RAW REGEX:\x1b[0m\n', rawRegex, '\n');
+  if (logsEnabled)
+    console.log(BOLD_BLUE, 'INPUT RAW REGEX:\x1b[0m\n', rawRegex, '\n');
   
   // Parse the raw regex
   const parsedRegex = regexToMinDFASpec(rawRegex);
   
   // Print input parsed regex
-  console.log(BOLD_BLUE, 'INPUT EXPANDED REGEX\x1b[0m\n', parsedRegex, '\n');
+  if (logsEnabled)
+    console.log(BOLD_BLUE, 'INPUT EXPANDED REGEX\x1b[0m\n', parsedRegex, '\n');
 
   return parsedRegex;
 }
@@ -271,13 +279,12 @@ function toNature(col: string) {
  * @param {string} regex The (expanded) regular expression to generate the minimum DFA graph from.
  * @returns {string} The JSON representation of the minimum DFA graph.
  */
-function generateMinDfaGraph(regex: string) {
+function generateMinDfaGraph(regex: string, logsEnabled=true) {
   // Generate NFA from parsed regex
   const nfa = regexToNfa(regex);
 
   // Generate min-DFA from NFA
   const dfa = minDfa(nfaToDfa(nfa as State));
-
   let i: number,
     states: Record<string, GraphState> = {},
     nodes: GraphState[] = [],
@@ -320,7 +327,8 @@ function generateMinDfaGraph(regex: string) {
   }
 
   const BOLD_PINK = "\x1b[35;1m";
-  console.log(BOLD_PINK, 'Min-DFA JSON GRAPH\x1b[0m\n', JSON.stringify(graph), '\n');
+  if (logsEnabled)
+    console.log(BOLD_PINK, 'Min-DFA JSON GRAPH\x1b[0m\n', JSON.stringify(graph), '\n');
 
   return JSON.stringify(graph);
 }
