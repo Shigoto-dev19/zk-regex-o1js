@@ -1,20 +1,24 @@
-//TODO Declare state_changed outside of the loop declaration
-//TODO Add option to use raw transition or extractor
-//TODO Refactor is_substr calculation
-//TODO Fix occurence compiler code when regex ends withrepetition operator +
-//TODO Add option to only reveal bytes if valid is true
-//TODO organize zkRegex into a class
-//TODO Add the option to reveal substrings based on search functions .i.e. isDigit, isNumber etc...
-
+import { assert } from "o1js";
 import { 
     parseRawRegex, 
     generateMinDfaGraph, 
     GraphTransition,
 } from "./regexToDfa.js";
 
+// Handle different commands based on 'countEnabled' and 'substringEnabled' boolean arguments
+const rawRegex = process.argv[2] ?? "name: [A-Z][a-z]+";
+let countEnabled = false;
+let substringEnabled = false;
+if (process.argv[3]) {
+    if (process.argv[3] === 'true') countEnabled = true;
+    else {
+        if (process.argv[4] === 'true') countEnabled = true;
+        else if (!process.argv[4]) countEnabled;
+        else throw new Error("Please enter 'true' if you want to activate 'countEnabled' argument!");
+        substringEnabled = true;
+    }
+}
 
-
-const rawRegex = process.argv[2] ?? "1=(a|b) (2=(b|c)+ )+d";
 const expandedRegex = parseRawRegex(rawRegex);
 const graphJson: GraphTransition[] = JSON.parse(generateMinDfaGraph(expandedRegex));
 
@@ -197,9 +201,6 @@ for (let i = 1; i < N; i++) {
         } else if (eq_outputs.length > 1) {
             const eq_outputs_key = JSON.stringify(eq_outputs);
             if (multi_or_checks1[eq_outputs_key] === undefined) {
-            lines.push(`\tlet multi_or${multi_or_i} = Bool(false);`);
-            lines.push(`\tlet multi_or${multi_or_i} = Bool(false);`);
-
                 lines.push(`\tlet multi_or${multi_or_i} = Bool(false);`);
 
                 for (let output_i = 0; output_i < eq_outputs.length; output_i++) {
@@ -275,8 +276,7 @@ lines = declarations.concat(init_code).concat(lines);
 const accept_node: number = acceptNodesArray[0];
 const accept_lines = [""];
 
-const occurence = false;
-if (occurence) {
+if (countEnabled) {
     accept_lines.push("let final_state_sum: Field[] = [];");
     accept_lines.push(`final_state_sum[0] = states[0][${accept_node}].toField();`);
     accept_lines.push("for (let i = 1; i <= num_bytes; i++) {");
@@ -297,7 +297,7 @@ if (occurence) {
         accept_lines.push(`\tfinal_state_result = final_state_result.or(states[i][${accept_node}]);`);
         accept_lines.push("}");
     }
-    accept_lines.push("\n\tconst out = final_state_result;\n");
+    accept_lines.push("const out = final_state_result;\n");
 }
 
 lines.push(...accept_lines);
@@ -347,12 +347,18 @@ function substring_lines(substrDefsArray: [number, number][][]): string {
     return reveal;
 }
 
-// substring_lines [[[2, 3]], [[6, 7], [7, 7]], [[8, 9]]]
-const revealedTransitions: [number, number][][] = [[[0, 1], [2, 3]], [[6, 7], [7, 7]], [[8, 9]]];
-
-const substringEnabled = true;
 let reveal_lines: string;
 if (substringEnabled) {
+    const parsedInput: string[] |  [number, number][][] = JSON.parse(process.argv[3]);
+    
+    let revealedTransitions: [number, number][][];
+    // Type guard to check if parsedInput is an array of strings
+    try {
+        revealedTransitions = extractSubstrTransitions(parsedInput as string[]);
+    } catch (error) {
+        revealedTransitions = parsedInput as [number, number][][]
+    }
+    
     reveal_lines = substring_lines(revealedTransitions) +
     "\n\n\treturn { out, reveal };"
 } else {
@@ -368,3 +374,46 @@ export const functionString =
 const BOLD_GREEN = "\x1b[32;1m";
 console.log(BOLD_GREEN, "-------------------- YOU CAN COPY THE O1JS ZK REGEX CIRCUIT BELOW --------------------\x1b[0m");
 console.log(functionString);
+
+function extractSubstrTransitions(
+  partRegexArray: string[],
+) {
+  let substrDefsArray: [number, number][][] = [];
+  for (const partRegex of partRegexArray) {
+    assert(
+      rawRegex.includes(partRegex),
+      'Input substring is not found within the entire regex pattern!'
+    );
+    const parsedPartRegex = parseRawRegex(partRegex, false);
+    const expandedPartRegex: GraphTransition[] = JSON.parse(
+      generateMinDfaGraph(parsedPartRegex, false)
+    );
+    let extractedInputs = expandedPartRegex
+      .filter((node) => node.type === '')
+      .map((x) => Object.keys(x.transition))
+      .flat();
+    
+    extractedInputs = Array.from(new Set(extractedInputs));
+    let partSubstrDefsArray: [number, number][] = [];
+    for (const extractedInput of extractedInputs) {
+      for (let key of Object.keys(revGraphString)) {
+        const toState = parseInt(key);
+        const incomingStates = Object.keys(revGraphString[toState]).map((x) => parseInt(x));
+        for (const fromState of incomingStates) {
+          if (revGraphString[toState][fromState] === extractedInput)
+            partSubstrDefsArray.push([fromState, toState]);
+        }
+      }
+    }
+    substrDefsArray.push(partSubstrDefsArray);
+  }
+
+  return substrDefsArray;
+}
+
+//TODO Declare state_changed outside of the loop declaration
+//TODO Refactor is_substr calculation
+//TODO Fix occurence compiler code when regex ends with repetition operator +
+//TODO organize zkRegex into a class
+//TODO Add the option to reveal substrings based on search functions .i.e. isDigit, isNumber etc...
+//TODO Refine notations for both compile and compiled code
