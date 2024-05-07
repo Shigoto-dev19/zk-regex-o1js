@@ -15,20 +15,19 @@ import {
 } from 'o1js';
 
 class Bytes16 extends Bytes(16) {}
-
 export class RegexZkApp extends SmartContract {
     @state(Field) secretAdmin = State<Field>();
     @state(Bool) isDiscovered = State<Bool>();
     @state(PublicKey) mysterySolver = State<PublicKey>();
 
-    @method initalize(adminName: Bytes16) {
+    @method async initalize(adminName: Bytes16) {
     super.init();
         this.secretAdmin.set(Poseidon.hash(adminName.toFields()));
         this.isDiscovered.set(Bool(false));
         this.mysterySolver.set(PublicKey.empty());
     }
 
-    @method guessName(statement: Bytes16) {
+    @method async guessName(statement: Bytes16) {
         // This regex pattern specifies an alphabetic name of length 4 where the first letter is capitalized
         let { out, reveal } = nameRegex(statement.toFields());
         out.assertEquals(1, "Please enter only one valid name!");
@@ -39,55 +38,50 @@ export class RegexZkApp extends SmartContract {
         const adminCheck = this.secretAdmin.getAndRequireEquals().equals(calualtedId);
         this.isDiscovered.set(adminCheck);
 
-        const solverAddress = Provable.if(
+        const solverAddress: PublicKey = Provable.if(
             adminCheck,
-            this.sender,
+            this.sender.getAndRequireSignature(),
             PublicKey.empty()
         );
 
         this.mysterySolver.set(solverAddress);
         //? Add payment logic for the first mystery solver
     }
-
 }
 
 const proofsEnabled = false;
 
-const Local = Mina.LocalBlockchain({ proofsEnabled });
+const Local = await Mina.LocalBlockchain({ proofsEnabled });
 Mina.setActiveInstance(Local);
-const { privateKey: deployerKey, publicKey: deployerAccount } =
-    Local.testAccounts[0];
-const { privateKey: senderKey, publicKey: senderAccount } =
-    Local.testAccounts[1];
-
+const [deployerAccount, senderAccount] = Local.testAccounts;
 
 const zkAppPrivateKey = PrivateKey.random();
 const zkAppAddress = zkAppPrivateKey.toPublicKey();
 
-
-if (proofsEnabled) await RegexZkApp.compile();
 const zkAppInstance = new RegexZkApp(zkAppAddress);
+if (proofsEnabled) await RegexZkApp.compile();
 
-const deployTxn = await Mina.transaction(deployerAccount, () => {
+const deployTxn = await Mina.transaction(deployerAccount, async () => {
     AccountUpdate.fundNewAccount(deployerAccount);
-    zkAppInstance.deploy();
-    zkAppInstance.initalize(Bytes16.fromString("Bart"));
+    await zkAppInstance.deploy();
+    await zkAppInstance.initalize(Bytes16.fromString("Bart"));
 });
 
 await deployTxn.prove()
-await deployTxn.sign([deployerKey, zkAppPrivateKey]).send();
+await deployTxn.sign([zkAppPrivateKey, deployerAccount.key ]).send();
 
-const tx = await Mina.transaction(senderAccount, () => {
+const tx = await Mina.transaction(senderAccount, async () => {
     const guess = Bytes16.fromString('Bart the great!');
-    zkAppInstance.guessName(guess);
+    await zkAppInstance.guessName(guess);
 });
 
 await tx.prove();
-await tx.sign([senderKey]).send();
+await tx.sign([senderAccount.key]).send();
+
 
 console.log(
     'guessName method rows: ',
-    RegexZkApp.analyzeMethods({ printSummary: false })['guessName'].rows
+    (await RegexZkApp.analyzeMethods({ printSummary: false }))['guessName'].rows
 );
 console.log('Admin name is discovered: ', zkAppInstance.isDiscovered.get().toBoolean());
 
