@@ -6,7 +6,7 @@ import {
 } from "./regexToDfa.js";
 
 // Handle different commands based on 'countEnabled' and 'substringEnabled' boolean arguments
-const rawRegex = process.argv[2] ?? "name: [A-Z][a-z]+";
+const rawRegex = process.argv[2];
 let countEnabled = false;
 let substringEnabled = false;
 if (process.argv[3]) {
@@ -164,7 +164,7 @@ for (let i = 1; i < N; i++) {
             const min = min_max[0];
             const max = min_max[1];
             if (range_checks[min][max] === undefined) {
-                lines.push(`\tconst lt${lt_i} = Field(${min}).lessThanOrEqual(input[i]);`);
+                lines.push(`\tconst lt${lt_i} = new UInt8(${min}).lessThanOrEqual(input[i]);`);
 
                 lines.push(`\tconst lt${lt_i + 1} = input[i].lessThanOrEqual(${max});`);
 
@@ -183,7 +183,7 @@ for (let i = 1; i < N; i++) {
 
         for (let code of vals) {
             if (eq_checks[code] === undefined) {
-                lines.push(`\tconst eq${eq_i} = input[i].equals(${code});`);
+                lines.push(`\tconst eq${eq_i} = input[i].value.equals(${code});`);
                 
                 eq_outputs.push(['eq', eq_i]);
                 eq_checks[code] = eq_i;
@@ -338,9 +338,9 @@ function substring_lines(substrDefsArray: [number, number][][]): string {
         }
 
         reveal += `\t\tis_reveal${idx}[i] = is_substr${idx}[i][${numDefs}].and(is_consecutive[i][1]);\n`;
-        reveal += `\t\treveal${idx}[i] = input[i+1].mul(is_reveal${idx}[i].toField());\n`;
+        reveal += `\t\treveal${idx}[i] = input[i+1].value.mul(is_reveal${idx}[i].toField());\n`;
         reveal += "\t}\n";
-        reveal += includes_start ? `\treveal${idx}.unshift(input[0].mul(states[1][${startIndex}].toField()));\n` : '';
+        reveal += includes_start ? `\treveal${idx}.unshift(input[0].value.mul(states[1][${startIndex}].toField()));\n` : '';
         reveal += `\treveal.push(reveal${idx});`;
     }
     
@@ -366,7 +366,7 @@ if (substringEnabled) {
 }
 
 export const functionString = 
-    "\n(input: Field[]) {\n" +
+    "\n(input: UInt8[]) {\n" +
     lines.join('\n\t') + 
     reveal_lines + 
     "\n}";
@@ -414,6 +414,6 @@ function extractSubstrTransitions(
 //TODO Declare state_changed outside of the loop declaration
 //TODO Refactor is_substr calculation
 //TODO Fix occurence compiler code when regex ends with repetition operator +
-//TODO organize zkRegex into a class
+//TODO Organize zkRegex compiler into a class
 //TODO Add the option to reveal substrings based on search functions .i.e. isDigit, isNumber etc...
 //TODO Refine notations for both compile and compiled code

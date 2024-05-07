@@ -12,6 +12,7 @@ import {
     Mina,
     PrivateKey,
     AccountUpdate,
+    UInt8,
 } from 'o1js';
 
 class Bytes16 extends Bytes(16) {}
@@ -29,7 +30,7 @@ export class RegexZkApp extends SmartContract {
 
     @method async guessName(statement: Bytes16) {
         // This regex pattern specifies an alphabetic name of length 4 where the first letter is capitalized
-        let { out, reveal } = nameRegex(statement.toFields());
+        let { out, reveal } = nameRegex(statement.bytes);
         out.assertEquals(1, "Please enter only one valid name!");
 
         const name = reveal[0];
@@ -86,9 +87,9 @@ console.log(
 console.log('Admin name is discovered: ', zkAppInstance.isDiscovered.get().toBoolean());
 
 
-// "name: [A-Z][a-z][a-z][a-z]" & revealing all
+// "[A-Z][a-z][a-z][a-z]" & revealing all
 // Basically, the regex pattern is to give an alphabetic name of length 4 where the first letter is capital
-function nameRegex(input: Field[]) {
+function nameRegex(input: UInt8[]) {
     const num_bytes = input.length;
     let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);
     let state_changed: Bool[] = Array.from({ length: num_bytes }, () => Bool(false));
@@ -99,13 +100,13 @@ function nameRegex(input: Field[]) {
     }
 
     for (let i = 0; i < num_bytes; i++) {
-        const lt0 = Field(65).lessThanOrEqual(input[i]);
+        const lt0 = new UInt8(65).lessThanOrEqual(input[i]);
         const lt1 = input[i].lessThanOrEqual(90);
         const and0 = lt0.and(lt1);
         const and1 = states[i][0].and(and0);
         states[i+1][1] = and1;
         state_changed[i] = state_changed[i].or(states[i+1][1]);
-        const lt2 = Field(97).lessThanOrEqual(input[i]);
+        const lt2 = new UInt8(97).lessThanOrEqual(input[i]);
         const lt3 = input[i].lessThanOrEqual(122);
         const and2 = lt2.and(lt3);
         const and3 = states[i][1].and(and2);
@@ -149,9 +150,9 @@ function nameRegex(input: Field[]) {
         is_substr0[i][3] = is_substr0[i][2].or(states[i+1][2].and(states[i+2][3]));
         is_substr0[i][4] = is_substr0[i][3].or(states[i+1][3].and(states[i+2][4]));
         is_reveal0[i] = is_substr0[i][4].and(is_consecutive[i][1]);
-        reveal0[i] = input[i+1].mul(is_reveal0[i].toField());
+        reveal0[i] = input[i+1].value.mul(is_reveal0[i].toField());
     }
-    reveal0.unshift(input[0].mul(states[1][1].toField()));
+    reveal0.unshift(input[0].value.mul(states[1][1].toField()));
     reveal.push(reveal0);
 
     return { out, reveal };

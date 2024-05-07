@@ -15,7 +15,7 @@ By leveraging ZK Regex, developers can securely verify the presence of specific 
 1. Start by providing a raw or parsed (expanded) regex pattern, then execute the following command:
 
    ```sh
-   npm run zk-regex '<input>'
+   npm run zk-regex '<regexPattern>'
    ```
 
    **NOTE:** `countEnabled` and `substringEnabled` arguments are set to **false** by default.
@@ -23,7 +23,7 @@ By leveraging ZK Regex, developers can securely verify the presence of specific 
 2. In your TypeScript file, import the necessary modules at the top:
 
    ```typescript
-   import { Field, Bool } from 'o1js';
+   import { Field, Bool, UInt8 } from 'o1js';
    ```
 
 3. Add the function body and paste your specific ZK Regex circuit code.
@@ -115,6 +115,12 @@ npm run testw # watch mode
 npm run coverage
 ```
 
+## How to run zkApp example
+
+```sh
+npm run zkapp
+```
+
 ## Raw Regex Syntax Guide
 
 - **Alteration:** The | character can be used to denote alternation between two expressions. For example: A|B.
@@ -181,6 +187,8 @@ For more details, you can visit this amazing [ZK Regex Tools](https://zkregex.co
 ## Acknowledgment
 
 - A huge thanks to the [zkemail](https://github.com/zkemail) team for their magnificent work on the original [zk-regex](https://github.com/zkemail/zk-regex), which inspired and aided in the development of this project. Their reference materials and documentation were invaluable in understanding the technical intricacies.
+
+- Special thanks to [Gregor Mitscha-Baude](https://twitter.com/mitschabaude) for identifying the inefficiency in processing full field elements. This change significantly improved the efficiency of the o1js-regex circuits.
 
 ## License
 

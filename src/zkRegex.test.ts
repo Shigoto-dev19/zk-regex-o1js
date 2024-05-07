@@ -1,4 +1,4 @@
-import { Bool, Field, Bytes } from 'o1js';
+import { Bool, Field, Bytes, UInt8 } from 'o1js';
 import {
   simpleRegex, 
   emailRegex, 
@@ -47,7 +47,7 @@ function utf8BytesToString(bytes: bigint[]): string {
 
 type OutputType = Field | Bool;
 
-type ZkRegexFunction<T extends OutputType> = (input: Field[]) => {
+type ZkRegexFunction<T extends OutputType> = (input: UInt8[]) => {
   out: T;
   reveal: Field[][];
 }
@@ -68,7 +68,7 @@ function testZkRegex<T extends OutputType>(
   isValidExpected: T,
   expectedSubstring?: string[]
 ) {
-  const inputBytes = Bytes.fromString(input).toFields();
+  const inputBytes = Bytes.fromString(input).bytes;
 
   const { out, reveal } = zkRegexFunction(inputBytes);
 
