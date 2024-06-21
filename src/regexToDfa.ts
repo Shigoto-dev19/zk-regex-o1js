@@ -51,7 +51,7 @@ const wordCharacters = alphanumeric + "_";
 
 const a2z = barSeparated(alphabeticLowercase);
 const A2Z = barSeparated(alphabeticUppercase);
-const r0to9 = barSeparated(digits);
+const r0to9 = `(${barSeparated(digits)})`;
 const alphanum = barSeparated(alphanumeric);
 
 const key_chars = `(${a2z})`;
@@ -69,7 +69,7 @@ const email_address_regex = `([a-zA-Z0-9._%\\+-=]+@[a-zA-Z0-9.-]+)`;
 // Note that ^ has to be manually replaced with \x80 in the regex
 const escapeMap = { n: "\n", r: "\r", t: "\t", v: "\v", f: "\f" };
 let whitespace = Object.values(escapeMap);
-const slash_s = whitespace.join("|");
+const slash_s = `(${whitespace.join("|")})`;
 
 /**
  * Parses the input raw regex into an expanded parsed form and displays the DFA.
@@ -128,15 +128,17 @@ function format_regex_printable(s: string) {
  */
 function regexToMinDFASpec(str: string) {
   // Replace all A-Z with A2Z etc
-  // TODO: Upstream this to min_dfa
+  //TODO Upstream this to min_dfa
+  //TODO Use regex to parse to regex and refactor code
+  //TODO Bind native js to zk-regex parsing 
   let combined_nosep = str
     .replaceAll("A-Z", alphabeticUppercase)
     .replaceAll("a-z", alphabeticLowercase)
     .replaceAll("A-F", "ABCDEF")
     .replaceAll("a-f", "abcdef")
     .replaceAll("0-9", digits)
-    .replaceAll("\\w", wordCharacters)
-    .replaceAll("\\d", digits)
+    .replaceAll("\\w", word_char)
+    .replaceAll("\\d", r0to9)
     .replaceAll("\\s", slash_s);
 
   /**
