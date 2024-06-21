@@ -184,6 +184,10 @@ For more details, you can visit this amazing [ZK Regex Tools](https://zkregex.co
 
 - Since the project is inspired by the ZK Regex **Circom** Circuit Generator, visit this [Visual Circuit Generator](https://tool.zkregex.com/) for a similar experience in understanding how the compiler in o1js functions.
 
+## General Information About Regex
+
+For general information about regex, including syntax support, examples, and usage in programming languages, please visit this [link](https://www3.ntu.edu.sg/home/ehchua/programming/howto/Regexe.html#zz-2).
+
 ## Acknowledgment
 
 - A huge thanks to the [zkemail](https://github.com/zkemail) team for their magnificent work on the original [zk-regex](https://github.com/zkemail/zk-regex), which inspired and aided in the development of this project. Their reference materials and documentation were invaluable in understanding the technical intricacies.
