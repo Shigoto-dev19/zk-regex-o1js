@@ -91,7 +91,8 @@ function parseRawRegex(rawRegex: string, logsEnabled=true) {
     console.log(BOLD_BLUE, 'INPUT RAW REGEX:\x1b[0m\n', rawRegex, '\n');
   
   // Parse the raw regex
-  const parsedRegex = regexToMinDFASpec(rawRegex);
+  const expandedRegex = expandRangePatterns(rawRegex);
+  const parsedRegex = regexToMinDFASpec(expandedRegex);
   
   // Print input parsed regex
   if (logsEnabled)
@@ -121,22 +122,14 @@ function format_regex_printable(s: string) {
 
 /**
  * Expands [] sections in a regex string to convert values for https://zkregex.com/min_dfa.
- * Note: This function is not complete and very case-specific. It can only handle a-z and a-f, and not a-c.
  * 
- * @param {string} str The input regex with [] and special characters (i.e., the first line of min_dfa tool).
+ * @param str The input regex with [] and special characters (i.e., the first line of min_dfa tool).
  * @returns {string} The expanded regex without any special characters.
  */
 function regexToMinDFASpec(str: string) {
-  // Replace all A-Z with A2Z etc
   //TODO Upstream this to min_dfa
-  //TODO Use regex to parse to regex and refactor code
-  //TODO Bind native js to zk-regex parsing 
+  
   let combined_nosep = str
-    .replaceAll("A-Z", alphabeticUppercase)
-    .replaceAll("a-z", alphabeticLowercase)
-    .replaceAll("A-F", "ABCDEF")
-    .replaceAll("a-f", "abcdef")
-    .replaceAll("0-9", digits)
     .replaceAll("\\w", word_char)
     .replaceAll("\\d", r0to9)
     .replaceAll("\\s", slash_s);
@@ -333,4 +326,49 @@ function generateMinDfaGraph(regex: string, logsEnabled=true) {
     console.log(BOLD_PINK, 'Min-DFA JSON GRAPH\x1b[0m\n', JSON.stringify(graph), '\n');
 
   return JSON.stringify(graph);
+}
+
+/**
+ * Expands range patterns in a given string into their full forms.
+ *
+ * @param regexPattern - The input string containing range patterns.
+ * 
+ * @returns The expanded string with all ranges fully enumerated.
+ * @throws Throws an error if the range is invalid or has inconsistent types.
+ */
+function expandRangePatterns(pattern: string): string {
+  return pattern.replace(/\[(.*?)\]/g, (_, p1) => {
+    let expanded = p1.replace(
+      /([a-zA-Z0-9])-([a-zA-Z0-9])/g,
+      (rangeMatch: string, start: string, end: string) => {
+        // Assert that start < end
+        if (start.charCodeAt(0) >= end.charCodeAt(0)) {
+          throw new Error(`Invalid range: ${rangeMatch}`);
+        }
+
+        // Assert that both are digits, or both are lowercase letters, or both are uppercase letters
+        if (
+          !(
+            (/[a-z]/.test(start) && /[a-z]/.test(end)) ||
+            (/[A-Z]/.test(start) && /[A-Z]/.test(end)) ||
+            (/[0-9]/.test(start) && /[0-9]/.test(end))
+          )
+        ) {
+          throw new Error(`Inconsistent range types: ${rangeMatch}`);
+        }
+
+        // Generate the regex group for the range
+        let range = '';
+        for (let i = start.charCodeAt(0); i <= end.charCodeAt(0); i++) {
+          range += String.fromCharCode(i);
+        }
+
+        // Return the expanded range
+        return range;
+      }
+    );
+
+    // Wrap expanded characters in parentheses separated by '|'
+    return `(${expanded.split('').join('|')})`;
+  });
 }
