@@ -2,6 +2,10 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { State, regexToNfa, nfaToDfa, minDfa } from "./lexical.js";
 
+//TODO Clean and separate helper functions
+//TODO Add syntax support for determined number of repetition
+//TODO Fix meta characters reptition expansion
+
 export {
   parseRawRegex, 
   generateMinDfaGraph, 
@@ -91,7 +95,8 @@ function parseRawRegex(rawRegex: string, logsEnabled=true) {
     console.log(BOLD_BLUE, 'INPUT RAW REGEX:\x1b[0m\n', rawRegex, '\n');
   
   // Parse the raw regex
-  const expandedRegex = expandRangePatterns(rawRegex);
+  let expandedRegex = expandRepetitionPatterns(rawRegex)
+  expandedRegex = expandRangePatterns(expandedRegex);
   const parsedRegex = regexToMinDFASpec(expandedRegex);
   
   // Print input parsed regex
@@ -128,7 +133,7 @@ function format_regex_printable(s: string) {
  */
 function regexToMinDFASpec(str: string) {
   //TODO Upstream this to min_dfa
-  
+  //TODO Separate unfolding meta-characters
   let combined_nosep = str
     .replaceAll("\\w", word_char)
     .replaceAll("\\d", r0to9)
@@ -371,4 +376,34 @@ function expandRangePatterns(pattern: string): string {
     // Wrap expanded characters in parentheses separated by '|'
     return `(${expanded.split('').join('|')})`;
   });
+}
+
+/**
+ * Parses a string containing repetition patterns similar to regex {n}
+ * and expands them into their full form.
+ * 
+ * @param input The input string containing repetition patterns.
+ * @returns The expanded string.
+ */
+function expandRepetitionPatterns(input: string): string {
+  // Regular expression to find repetition patterns
+  const repetitionPattern = /(\[[^\]]+\]|\([^\\)]+\)|.)\{(\d+)\}/g;
+
+  // Recursive function to expand patterns
+  function expand(input: string): string {
+    return input.replace(repetitionPattern, (match, group, count) => {
+      const repeatCount = parseInt(count, 10);
+      return Array(repeatCount).fill(group).join('');
+    });
+  }
+
+  // Expand until no more patterns are found
+  let expanded = input;
+  let prevExpanded;
+  do {
+    prevExpanded = expanded;
+    expanded = expand(expanded);
+  } while (expanded !== prevExpanded);
+
+  return expanded;
 }
