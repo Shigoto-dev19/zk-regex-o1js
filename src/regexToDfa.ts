@@ -3,8 +3,6 @@
 import { State, regexToNfa, nfaToDfa, minDfa } from "./lexical.js";
 
 //TODO Clean and separate helper functions
-//TODO Add syntax support for determined number of repetition
-//TODO Fix meta characters reptition expansion
 
 export {
   parseRawRegex, 
@@ -66,7 +64,7 @@ const catch_all_without_semicolon =
 
 const email_chars = `${alphanum}|_|.|-`;
 const base_64 = `(${alphanum}|\\+|/|=)`;
-const word_char = `(${alphanum}|_)`;
+const wordChar = `(${alphanum}|_)`;
 const email_address_regex = `([a-zA-Z0-9._%\\+-=]+@[a-zA-Z0-9.-]+)`;
 
 // TODO: Note that this is replicated code in lexical.ts as well
@@ -95,7 +93,8 @@ function parseRawRegex(rawRegex: string, logsEnabled=true) {
     console.log(BOLD_BLUE, 'INPUT RAW REGEX:\x1b[0m\n', rawRegex, '\n');
   
   // Parse the raw regex
-  let expandedRegex = expandRepetitionPatterns(rawRegex)
+  let expandedRegex = unfoldMetaCharacters(rawRegex);
+  expandedRegex = expandRepetitionPatterns(expandedRegex)
   expandedRegex = expandRangePatterns(expandedRegex);
   const parsedRegex = regexToMinDFASpec(expandedRegex);
   
@@ -135,9 +134,6 @@ function regexToMinDFASpec(str: string) {
   //TODO Upstream this to min_dfa
   //TODO Separate unfolding meta-characters
   let combined_nosep = str
-    .replaceAll("\\w", word_char)
-    .replaceAll("\\d", r0to9)
-    .replaceAll("\\s", slash_s);
 
   /**
    * Adds a pipe inside brackets in the string.
@@ -411,4 +407,23 @@ function expandRepetitionPatterns(pattern: string): string {
   } while (expanded !== prevExpanded);
 
   return expanded;
+}
+
+/**
+ * Expands common regex meta-characters into their full character classes.
+ *
+ * This function replaces shorthand character classes like \w, \W, \d, \D, \s, and \S
+ * with their full equivalent character classes.
+ *
+ * @param pattern - The input string containing meta-characters.
+ * @returns The expanded string with all meta-characters fully enumerated.
+ */
+function unfoldMetaCharacters(pattern: string) {
+  return pattern
+    .replaceAll('\\w', wordChar)                      // word characters
+    .replaceAll('\\W', '[^A-Za-z0-9_]')               // non-word characters
+    .replaceAll('\\d', r0to9)                         // digits
+    .replaceAll('\\D', '[^0-9]')                      // non-digits
+    .replaceAll('\\s', slash_s)                       // whitespace characters
+    .replaceAll('\\S', `[^${whitespace.join('')}]`);  // non-whitespace characters
 }
