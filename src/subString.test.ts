@@ -6,18 +6,16 @@ import {
   GraphTransition,
 } from './regexToDfa';
 
-//TODO Refactor tests -> remove processing the entire regex all over again
-export function extractSubstrTransitions(
-  partRegexArray: string[],
-  entireRegex: string
-) {
+type RevGraph = Record<number, Record<number, string>>;
+
+function generateRevGraph(entireRegex: string) {
   // Process entire regex
   const expandedRegex = parseRawRegex(entireRegex, false);
   const graphJson: GraphTransition[] = JSON.parse(
     generateMinDfaGraph(expandedRegex, false)
   );
   const N = graphJson.length;
-  const revGraphString: Record<number, Record<number, string>> = Array.from(
+  const revGraphString: RevGraph = Array.from(
     { length: N },
     () => ({})
   );
@@ -30,6 +28,16 @@ export function extractSubstrTransitions(
       revGraphString[v][i] = k;
     }
   }
+
+  return revGraphString
+}
+
+function extractSubstrTransitions(
+  partRegexArray: string[],
+  entireRegex: string,
+  revGraphString?: RevGraph
+) {
+  if (!revGraphString) revGraphString = generateRevGraph(entireRegex);
 
   let substrDefsArray: [number, number][][] = [];
   for (const partRegex of partRegexArray) {
@@ -66,12 +74,14 @@ export function extractSubstrTransitions(
 
 describe('Simple Regex: 1=(a|b) (2=(b|c)+ )+d', () => {
   const entireRegex = '1=(a|b) (2=(b|c)+ )+d';
+  const revGraphString = generateRevGraph(entireRegex);
 
   it("should reject non-existant regex sub-pattern", () => {
     const partRegexArray = ['(a|c)'];
     const extractedTransitions = () => extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
 
     const errorMessage = 'Input substring is not found within the entire regex pattern!';
@@ -82,7 +92,8 @@ describe('Simple Regex: 1=(a|b) (2=(b|c)+ )+d', () => {
     const partRegexArray = ['='];
     const extractedTransitions = extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
       
     const expectedTransitions = [
@@ -99,7 +110,8 @@ describe('Simple Regex: 1=(a|b) (2=(b|c)+ )+d', () => {
     const partRegexArray = [' '];
     const extractedTransitions = extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
       
     const expectedTransitions = [
@@ -116,7 +128,8 @@ describe('Simple Regex: 1=(a|b) (2=(b|c)+ )+d', () => {
     const partRegexArray = ['1', '2'];
     const extractedTransitions = extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
       
     const expectedTransitions = [
@@ -134,7 +147,8 @@ describe('Simple Regex: 1=(a|b) (2=(b|c)+ )+d', () => {
     const partRegexArray = ['(a|b)', '(b|c)', 'd'];
     const extractedTransitions = extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
       
     const expectedTransitions = [
@@ -152,12 +166,14 @@ describe('Simple Regex: 1=(a|b) (2=(b|c)+ )+d', () => {
 
 describe('Negate Regex: a:[^abcdefghijklmnopqrstuvwxyz]+.', () => {
   const entireRegex = 'a:[^abcdefghijklmnopqrstuvwxyz]+.';
+  const revGraphString = generateRevGraph(entireRegex);
 
   it("should reject non-existant regex sub-pattern", () => {
     const partRegexArray = ['b:'];
     const extractedTransitions = () => extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
 
     const errorMessage = 'Input substring is not found within the entire regex pattern!';
@@ -169,7 +185,8 @@ describe('Negate Regex: a:[^abcdefghijklmnopqrstuvwxyz]+.', () => {
     const partRegexArray = ['[^abcdefghijklmnopqrstuvwxyz]'];
     const extractedTransitions = extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
       
     const expectedTransitions = [
@@ -186,7 +203,8 @@ describe('Negate Regex: a:[^abcdefghijklmnopqrstuvwxyz]+.', () => {
     const partRegexArray = ['.'];
     const extractedTransitions = extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
 
     const expectedTransitions = [[[1, 2]]];
@@ -198,7 +216,8 @@ describe('Negate Regex: a:[^abcdefghijklmnopqrstuvwxyz]+.', () => {
     const partRegexArray = ['a:'];
     const extractedTransitions = extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
       
     const expectedTransitions = [
@@ -215,7 +234,8 @@ describe('Negate Regex: a:[^abcdefghijklmnopqrstuvwxyz]+.', () => {
     const partRegexArray = ['a:', '[^abcdefghijklmnopqrstuvwxyz]+', '.'];
     const extractedTransitions = extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
       
     const expectedTransitions = [
@@ -286,12 +306,14 @@ describe("Fully Repated Regex Patterns: '[a-z]+' and '[^aeiou]+'", () => {
 
 describe("Mina Regex: '(mina|MINA)+'", () => {
   const entireRegex = '(mina|MINA)+';
+  const revGraphString = generateRevGraph(entireRegex);
 
   it("should reject non-existant regex sub-pattern", () => {
     const partRegexArray = ['tina'];
     const extractedTransitions = () => extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
 
     const errorMessage = 'Input substring is not found within the entire regex pattern!';
@@ -302,7 +324,8 @@ describe("Mina Regex: '(mina|MINA)+'", () => {
     const partRegexArray = ['mina'];
     const extractedTransitions = extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
 
     const expectedTransitions = [
@@ -322,7 +345,8 @@ describe("Mina Regex: '(mina|MINA)+'", () => {
     const partRegexArray = ['MINA'];
     const extractedTransitions = extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
 
     const expectedTransitions = [
@@ -341,12 +365,14 @@ describe("Mina Regex: '(mina|MINA)+'", () => {
 
 describe("Email Regex: '([a-zA-Z0-9._%-=]+@[a-zA-Z0-9-]+.[a-z]+)'", () => {
   const entireRegex = '([a-zA-Z0-9._%-=]+@[a-zA-Z0-9-]+.[a-z]+)';
+  const revGraphString = generateRevGraph(entireRegex);
 
   it("should reject non-existant regex sub-pattern", () => {
     const partRegexArray = ['.com'];
     const extractedTransitions = () => extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
 
     const errorMessage = 'Input substring is not found within the entire regex pattern!';
@@ -357,7 +383,8 @@ describe("Email Regex: '([a-zA-Z0-9._%-=]+@[a-zA-Z0-9-]+.[a-z]+)'", () => {
     const partRegexArray = ['[a-zA-Z0-9._%-=]'];
     const extractedTransitions = extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
     const expectedTransitions = [
       [
@@ -373,7 +400,8 @@ describe("Email Regex: '([a-zA-Z0-9._%-=]+@[a-zA-Z0-9-]+.[a-z]+)'", () => {
     const partRegexArray = ['@'];
     const extractedTransitions = extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
 
     const expectedTransitions = [[[1, 2]]];
@@ -385,7 +413,8 @@ describe("Email Regex: '([a-zA-Z0-9._%-=]+@[a-zA-Z0-9-]+.[a-z]+)'", () => {
     const partRegexArray = ['[a-zA-Z0-9-]'];
     const extractedTransitions = extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
       
     const expectedTransitions = [
@@ -402,7 +431,8 @@ describe("Email Regex: '([a-zA-Z0-9._%-=]+@[a-zA-Z0-9-]+.[a-z]+)'", () => {
     const partRegexArray = ['.'];
     const extractedTransitions = extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
 
     const expectedTransitions = [[[3, 4]]];
@@ -414,7 +444,8 @@ describe("Email Regex: '([a-zA-Z0-9._%-=]+@[a-zA-Z0-9-]+.[a-z]+)'", () => {
     const partRegexArray = ['[a-z]+'];
     const extractedTransitions = extractSubstrTransitions(
       partRegexArray,
-      entireRegex
+      entireRegex,
+      revGraphString
     );
       
     const expectedTransitions = [
