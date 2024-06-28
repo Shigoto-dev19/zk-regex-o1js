@@ -336,13 +336,13 @@ function generateMinDfaGraph(regex: string, logsEnabled=true) {
 /**
  * Expands range patterns in a given string into their full forms.
  *
- * @param regexPattern - The input string containing range patterns.
+ * @param pattern - The input string containing range patterns.
  * 
  * @returns The expanded string with all ranges fully enumerated.
  * @throws Throws an error if the range is invalid or has inconsistent types.
  */
 function expandRangePatterns(pattern: string): string {
-  return pattern.replace(/\[(.*?)\]/g, (_, p1) => {
+  return pattern.replace(/\[(\^?)([^\]]*)\]/g, (_, caret: string, p1: string) => {
     let expanded = p1.replace(
       /([a-zA-Z0-9])-([a-zA-Z0-9])/g,
       (rangeMatch: string, start: string, end: string) => {
@@ -373,6 +373,11 @@ function expandRangePatterns(pattern: string): string {
       }
     );
 
+    // If caret (^) is present, return the expanded range within the negated character class
+    if (caret) {
+      return `[${caret}${expanded}]`;
+    }
+
     // Wrap expanded characters in parentheses separated by '|'
     return `(${expanded.split('').join('|')})`;
   });
@@ -382,10 +387,10 @@ function expandRangePatterns(pattern: string): string {
  * Parses a string containing repetition patterns similar to regex {n}
  * and expands them into their full form.
  * 
- * @param input The input string containing repetition patterns.
- * @returns The expanded string.
+ * @param pattern The regex pattern containing repetition patterns.
+ * @returns The expanded regex pattern.
  */
-function expandRepetitionPatterns(input: string): string {
+function expandRepetitionPatterns(pattern: string): string {
   // Regular expression to find repetition patterns
   const repetitionPattern = /(\[[^\]]+\]|\([^\\)]+\)|.)\{(\d+)\}/g;
 
@@ -398,7 +403,7 @@ function expandRepetitionPatterns(input: string): string {
   }
 
   // Expand until no more patterns are found
-  let expanded = input;
+  let expanded = pattern;
   let prevExpanded;
   do {
     prevExpanded = expanded;
