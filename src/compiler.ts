@@ -22,10 +22,12 @@ export class RegexCompiler {
   private initialState: null | number = null;
   private acceptState: number;
 
-  constructor(rawRegex: string) {
+  constructor(rawRegex: string, logsEnabled = false) {
     this.rawRegex = rawRegex;
-    this.expandedRegex = parseRawRegex(rawRegex);
-    this.graphJson = JSON.parse(generateMinDfaGraph(this.expandedRegex));
+    this.expandedRegex = parseRawRegex(rawRegex, logsEnabled);
+    this.graphJson = JSON.parse(
+      generateMinDfaGraph(this.expandedRegex, logsEnabled)
+    );
 
     this.nodeCount = this.graphJson.length;
     this.outgoingNodes = Array.from({ length: this.nodeCount }, () => []);
@@ -36,8 +38,8 @@ export class RegexCompiler {
     );
   }
 
-  static initialize(rawRegex: string) {
-    const regexCompiler = new RegexCompiler(rawRegex);
+  static initialize(rawRegex: string, logsEnabled = false) {
+    const regexCompiler = new RegexCompiler(rawRegex, logsEnabled);
     regexCompiler.sortNodes();
 
     return regexCompiler;

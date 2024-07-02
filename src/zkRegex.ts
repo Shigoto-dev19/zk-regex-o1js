@@ -17,7 +17,7 @@ if (process.argv[3]) {
   }
 }
 
-const compiler = RegexCompiler.initialize(rawRegex);
+const compiler = RegexCompiler.initialize(rawRegex, true);
 compiler.printRegexCircuit(countEnabled, revealEnabled);
 
 //TODO Declare state_changed outside of the loop declaration
