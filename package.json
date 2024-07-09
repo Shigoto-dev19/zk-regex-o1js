@@ -41,5 +41,8 @@
   },
   "peerDependencies": {
     "o1js": "1.*"
+  },
+  "dependencies": {
+    "commander": "^12.1.0"
   }
 }
