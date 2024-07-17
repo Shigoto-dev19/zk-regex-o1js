@@ -465,11 +465,11 @@ export class RegexCompiler {
     return revealLines;
   }
 
-  private writeRevealLines(revealEnabled: boolean) {
+  private writeRevealLines(revealEnabled: boolean, transitionInput?: string) {
     let revealLines: string;
     if (revealEnabled) {
       const parsedInput: string[] | [number, number][][] = JSON.parse(
-        process.argv[3]
+        transitionInput ?? process.argv[3]
       );
 
       let revealedTransitions: [number, number][][];
@@ -492,7 +492,11 @@ export class RegexCompiler {
     return revealLines;
   }
 
-  printRegexCircuit(countEnabled: boolean, revealEnabled: boolean) {
+  printRegexCircuit(
+    countEnabled: boolean,
+    revealEnabled: boolean,
+    transitionInput?: string
+  ) {
     let circuitLines: string[] = [];
     circuitLines = this.writeDeclarationLines()
       .concat(this.writeInitLines())
@@ -502,7 +506,7 @@ export class RegexCompiler {
     const stringRegexCircuit =
       '\n(input: UInt8[]) {\n' +
       circuitLines.join('\n\t') +
-      this.writeRevealLines(revealEnabled) +
+      this.writeRevealLines(revealEnabled, transitionInput) +
       '\n}';
 
     const BOLD_GREEN = '\x1b[32;1m';
