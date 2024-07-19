@@ -465,21 +465,20 @@ export class RegexCompiler {
     return revealLines;
   }
 
-  private writeRevealLines(revealEnabled: boolean, transitionInput?: string) {
+  private writeRevealLines(
+    revealEnabled: boolean,
+    transitionInput?: string[] | [number, number][][]
+  ) {
     let revealLines: string;
     if (revealEnabled) {
-      const parsedInput: string[] | [number, number][][] = JSON.parse(
-        transitionInput ?? process.argv[3]
-      );
-
       let revealedTransitions: [number, number][][];
       // Type guard to check if parsedInput is an array of strings
       try {
         revealedTransitions = this.extractSubPatternTransitions(
-          parsedInput as string[]
+          transitionInput as string[]
         );
       } catch (error) {
-        revealedTransitions = parsedInput as [number, number][][];
+        revealedTransitions = transitionInput as [number, number][][];
       }
 
       revealLines =
@@ -495,7 +494,7 @@ export class RegexCompiler {
   printRegexCircuit(
     countEnabled: boolean,
     revealEnabled: boolean,
-    transitionInput?: string
+    transitionInput?: string[] | [number, number][][]
   ) {
     let circuitLines: string[] = [];
     circuitLines = this.writeDeclarationLines()
