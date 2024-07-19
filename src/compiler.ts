@@ -372,7 +372,7 @@ export class RegexCompiler {
     return acceptLines;
   }
 
-  extractSubPatternTransitions(partRegexArray: string[]) {
+  public extractSubPatternTransitions(partRegexArray: string[]) {
     let subPatternDefsArray: [number, number][][] = [];
     for (const partRegex of partRegexArray) {
       assert(
@@ -467,7 +467,7 @@ export class RegexCompiler {
 
   private writeRevealLines(
     revealEnabled: boolean,
-    transitionInput?: string[] | [number, number][][]
+    revealInput?: string[] | [number, number][][]
   ) {
     let revealLines: string;
     if (revealEnabled) {
@@ -475,10 +475,10 @@ export class RegexCompiler {
       // Type guard to check if parsedInput is an array of strings
       try {
         revealedTransitions = this.extractSubPatternTransitions(
-          transitionInput as string[]
+          revealInput as string[]
         );
       } catch (error) {
-        revealedTransitions = transitionInput as [number, number][][];
+        revealedTransitions = revealInput as [number, number][][];
       }
 
       revealLines =
