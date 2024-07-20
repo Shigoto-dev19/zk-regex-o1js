@@ -22,6 +22,8 @@ export class RegexCompiler {
   private initialState: null | number = null;
   private acceptState: number;
 
+  public stringRegexCircuit: string;
+
   constructor(rawRegex: string, logsEnabled = false) {
     this.rawRegex = rawRegex;
     this.expandedRegex = parseRawRegex(rawRegex, logsEnabled);
@@ -491,7 +493,7 @@ export class RegexCompiler {
     return revealLines;
   }
 
-  printRegexCircuit(
+  generateStringRegexCircuit(
     countEnabled: boolean,
     revealEnabled: boolean,
     transitionInput?: string[] | [number, number][][],
@@ -503,11 +505,15 @@ export class RegexCompiler {
       .concat(this.writeBodyLines())
       .concat(this.writeAcceptLines(countEnabled));
 
-    const stringRegexCircuit =
+    this.stringRegexCircuit =
       `\n${functionName}(input: UInt8[]) {\n` +
       circuitLines.join('\n\t') +
       this.writeRevealLines(revealEnabled, transitionInput) +
       '\n}';
+  }
+
+  printRegexCircuit(stringRegexCircuit?: string) {
+    stringRegexCircuit = stringRegexCircuit ?? this.stringRegexCircuit;
 
     const BOLD_GREEN = '\x1b[32;1m';
     console.log(
