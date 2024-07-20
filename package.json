@@ -21,7 +21,6 @@
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "testw": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "lint": "npx eslint src/* --fix",
-    "zk-regex": "npm run build && node build/src/zkRegex.js",
     "example": "npm run zk-regex [a-z]+",
     "zkapp": "npm run build && node build/src/zkapp.js"
   },
