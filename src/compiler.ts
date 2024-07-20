@@ -494,7 +494,8 @@ export class RegexCompiler {
   printRegexCircuit(
     countEnabled: boolean,
     revealEnabled: boolean,
-    transitionInput?: string[] | [number, number][][]
+    transitionInput?: string[] | [number, number][][],
+    functionName?: string
   ) {
     let circuitLines: string[] = [];
     circuitLines = this.writeDeclarationLines()
@@ -503,7 +504,7 @@ export class RegexCompiler {
       .concat(this.writeAcceptLines(countEnabled));
 
     const stringRegexCircuit =
-      '\n(input: UInt8[]) {\n' +
+      `\n${functionName}(input: UInt8[]) {\n` +
       circuitLines.join('\n\t') +
       this.writeRevealLines(revealEnabled, transitionInput) +
       '\n}';

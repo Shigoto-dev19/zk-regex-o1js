@@ -15,10 +15,17 @@ program
     'Partial state transitions to reveal'
   )
   .option('-s, --revealSubpatterns <values...>', 'Regex subpatterns to reveal')
+  .option(
+    '-n, --functionName <name>',
+    'Function name to give to the regex circuit'
+  )
   .action((rawRegex, options) => {
     // Extract and set the options
     const countEnabled = options.count || false;
     let revealEnabled = false;
+    const functionName = options.functionName
+      ? 'function ' + options.functionName
+      : '';
 
     let revealInput: string[] | [number, number][][] | undefined = undefined;
 
@@ -48,7 +55,12 @@ program
     }
 
     // Print the regex circuit based on the options
-    compiler.printRegexCircuit(countEnabled, revealEnabled, revealInput);
+    compiler.printRegexCircuit(
+      countEnabled,
+      revealEnabled,
+      revealInput,
+      functionName
+    );
   });
 
 // Parse the command-line arguments
