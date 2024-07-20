@@ -1,16 +1,7 @@
 import { Bool, Field, UInt8 } from 'o1js';
 
-export {
-  simpleRegex,
-  emailRegex,
-  base64Regex,
-  minaRegex,
-  negateRegex,
-  negateVowel,
-};
-
-// '1=(a|b) (2=(b|c)+ )+d' '["(a|b)", "(b|c)", "d"]'
-function simpleRegex(input: UInt8[]) {
+// Command used: '1=(a|b) (2=(b|c)+ )+d' '-s' '(a|b)' '(b|c)' 'd' '-n' 'simpleRegex' '-f' './src/examples.ts'
+export function simpleRegex(input: UInt8[]) {
   const num_bytes = input.length;
   let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);
   let state_changed: Bool[] = Array.from({ length: num_bytes }, () =>
@@ -144,9 +135,8 @@ function simpleRegex(input: UInt8[]) {
   return { out, reveal };
 }
 
-// '([a-zA-Z0-9._%-=]+@[a-zA-Z0-9-]+.[a-z]+)' '["[a-zA-Z0-9._%-=]", "[a-zA-Z0-9-]", "[a-z]"]'
-// Note: this is not the perfect regex pattern for an email: this is just for testing purposes!
-function emailRegex(input: UInt8[]) {
+// Command used: '([a-zA-Z0-9._%-=]+@[a-zA-Z0-9-]+.[a-z]+)' '-s' '[a-zA-Z0-9._%-=]' '[a-zA-Z0-9-]' '[a-z]' '-n' 'emailRegex' '-f' './src/examples.ts'
+export function emailRegex(input: UInt8[]) {
   const num_bytes = input.length;
   let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);
   let state_changed: Bool[] = Array.from({ length: num_bytes }, () =>
@@ -319,8 +309,8 @@ function emailRegex(input: UInt8[]) {
   return { out, reveal };
 }
 
-// '([a-zA-Z0-9]|\+|/|=)+' '[[[0,1],[1,1]]]' true
-function base64Regex(input: UInt8[]) {
+// Command used: '([a-zA-Z0-9]|\+|/|=)+' '-t' '[0,1],[1,1]' '-n' 'base64Regex' '-c' '-f' './src/examples.ts'
+export function base64Regex(input: UInt8[]) {
   const num_bytes = input.length;
   let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);
   let state_changed: Bool[] = Array.from({ length: num_bytes }, () =>
@@ -421,8 +411,8 @@ function base64Regex(input: UInt8[]) {
   return { out, reveal };
 }
 
-// '(mina|MINA)+' '["mina", "MINA"]' true
-function minaRegex(input: UInt8[]) {
+// Command used: '(mina|MINA)+' '-s' 'mina' 'MINA' '-n' 'minaRegex' '-c' '-f' './src/examples.ts'
+export function minaRegex(input: UInt8[]) {
   const num_bytes = input.length;
   let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);
   let state_changed: Bool[] = Array.from({ length: num_bytes }, () =>
@@ -558,8 +548,8 @@ function minaRegex(input: UInt8[]) {
   return { out, reveal };
 }
 
-// 'a:[^abcdefghijklmnopqrstuvwxyz]+.' '["[^abcdefghijklmnopqrstuvwxyz]"]'
-function negateRegex(input: UInt8[]) {
+// Command used: 'a:[^abcdefghijklmnopqrstuvwxyz]+.' '-s' '[^abcdefghijklmnopqrstuvwxyz]' '-n' 'negateRegex' '-f' './src/examples.ts'
+export function negateRegex(input: UInt8[]) {
   const num_bytes = input.length;
   let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);
   let state_changed: Bool[] = Array.from({ length: num_bytes }, () =>
@@ -641,8 +631,8 @@ function negateRegex(input: UInt8[]) {
   return { out, reveal };
 }
 
-// '[^aeiou]+' '["[^aeiou]+"]'
-function negateVowel(input: UInt8[]) {
+// Command used: '[^aeiou]+' '-s' '[^aeiou]+' '-n' 'negateVowel' '-f' './src/examples.ts'
+export function negateVowel(input: UInt8[]) {
   const num_bytes = input.length;
   let states: Bool[][] = Array.from({ length: num_bytes + 1 }, () => []);
   let state_changed: Bool[] = Array.from({ length: num_bytes }, () =>
