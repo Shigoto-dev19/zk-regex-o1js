@@ -65,6 +65,15 @@ program
       functionName
     );
 
+    // Capture the command used to run the CLI
+    const commandComment = `\n// Command used: ${process.argv
+      .slice(2) // Exclude the first two arguments (node and script path)
+      .map((arg) => `'${arg}'`) // Quote each argument for clarity
+      .join(' ')}`; // Join arguments into a single string
+
+    // Prepend the command comment to the regex circuit
+    compiler.stringRegexCircuit = commandComment + compiler.stringRegexCircuit;
+
     // If filePath is provided, append the regex circuit to the specified file
     if (options.filePath) {
       // Check if functionName option is specified
