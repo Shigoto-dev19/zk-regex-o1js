@@ -1,6 +1,7 @@
 import { assert } from 'o1js';
 import { RegexCompiler } from './compiler.js';
 import { Command } from 'commander';
+import { appendFileSync, existsSync, writeFileSync } from 'fs';
 
 // Initialize the commander program
 const program = new Command();
@@ -10,21 +11,22 @@ program
   .description('CLI for ZK Regex Compiler in o1js')
   .argument('<rawRegex>', 'Raw regex pattern to compile')
   .option('-c, --count', 'Enable count for match regex pattern')
-  .option(
-    '-t, --revealTransitions <values...>',
-    'Partial state transitions to reveal'
-  )
+  .option('-t, --revealTransitions <values...>', 'State transitions to reveal')
   .option('-s, --revealSubpatterns <values...>', 'Regex subpatterns to reveal')
   .option(
     '-n, --functionName <name>',
     'Function name to give to the regex circuit'
+  )
+  .option(
+    '-f, --filePath <path>',
+    'File path to append the regex circuit. If the file does not exist, it will be created with an import statement for required types and the regex circuit will be written to it. If the file already exists, only the regex circuit will be appended. Requires --functionName to be specified.'
   )
   .action((rawRegex, options) => {
     // Extract and set the options
     const countEnabled = options.count || false;
     let revealEnabled = false;
     const functionName = options.functionName
-      ? 'function ' + options.functionName
+      ? 'export function ' + options.functionName
       : '';
 
     let revealInput: string[] | [number, number][][] | undefined = undefined;
@@ -38,7 +40,8 @@ program
     }
 
     // Initialize the RegexCompiler
-    const compiler = RegexCompiler.initialize(rawRegex, true);
+    const logsEnabled = options.filePath ? false : true;
+    const compiler = RegexCompiler.initialize(rawRegex, logsEnabled);
 
     // Set transitionInput and revealEnabled based on the provided option
     if (options.revealTransitions) {
@@ -55,12 +58,47 @@ program
     }
 
     // Print the regex circuit based on the options
-    compiler.printRegexCircuit(
+    compiler.generateStringRegexCircuit(
       countEnabled,
       revealEnabled,
       revealInput,
       functionName
     );
+
+    // If filePath is provided, append the regex circuit to the specified file
+    if (options.filePath) {
+      // Check if functionName option is specified
+      if (functionName === '') {
+        console.error(
+          'Error: The --functionName option must be specified to append the regex circuit to a file.'
+        );
+        process.exit(1);
+      }
+
+      try {
+        const header = "import { Bool, Field, UInt8 } from 'o1js';\n\n";
+        const contentToAppend = `${compiler.stringRegexCircuit}\n`;
+
+        // Import required types from o1js if the file is new
+        if (existsSync(options.filePath)) {
+          // If the file exists, append the regex circuit
+          appendFileSync(options.filePath, contentToAppend);
+        } else {
+          // If the file does not exist, create it with the header and then append the regex circuit
+          writeFileSync(options.filePath, header + contentToAppend);
+        }
+
+        console.log(
+          '\x1b[1m\x1b[32m✓\x1b[0m',
+          `"${options.functionName}" o1js circuit successfully appended to ${options.filePath}`
+        );
+      } catch (error: any) {
+        console.error(`Error appending to file: ${error.message}`);
+      }
+    } else {
+      // If filePath is not provided, just print the regex circuit
+      compiler.printRegexCircuit();
+    }
   });
 
 // Parse the command-line arguments
