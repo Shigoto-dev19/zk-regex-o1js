@@ -123,18 +123,42 @@ npm run zkapp
 
 ## Raw Regex Syntax Guide
 
-- **Alteration:** The | character can be used to denote alternation between two expressions. For example: A|B.
-- **Concatenation:** Expressions can be concatenated together to form a new expression. For example: ABC.
-- **One or More:** The + character can be used to indicate that the preceding expression must occur one or more times. For example: A+.
-- **Zero or More:** The _ character can be used to indicate that the preceding expression can occur zero or more times. For example: A_.
-- **Optional:** The ? character can be used to indicate that the preceding expression is optional. For example: A?.
-  - Note: The optional character is not accepted, as the compiler throws an error stating 'Accept nodes length must be exactly 1'.
-- **ORing (Character/Number Classes):** Expressions can be ORed together using brackets and the | character to form character or number classes. For example: [ABC] or [345].
-- **Ranges:** Ranges of characters or numbers can be defined using brackets and the - character. For example: [0-9] or [a-z].
-- **Grouping:** Allows treating multiple characters or patterns as a single unit. This is useful for applying quantifiers or operators to multiple characters or patterns at once. For example, (ab)+ would match one or more occurrences of the sequence "ab".
-- **Negation**: The ^ character can be used to negate characters or ranges within character classes. For example, [^aeiou] matches any character that is not a vowel.
+- **Alteration:** The `|` character can be used to denote alternation between two expressions. For example: `A|B`.
+- **Concatenation:** Expressions can be concatenated together to form a new expression. For example: `ABC`.
+- **One or More:** The `+` character can be used to indicate that the preceding expression must occur one or more times. For example: `A+`.
+- **Grouping:** Allows treating multiple characters or patterns as a single unit. This is useful for applying quantifiers or operators to multiple characters or patterns at once. For example, `(ab)+` would match one or more occurrences of the sequence `ab`.
+- **ORing (Character/Number Classes):** Expressions can be ORed together using brackets and the `|` character to form character or number classes. For example: `(four|4)`.
+- **Ranges:** Ranges of characters or numbers can be defined using brackets and the `-` character. For example: `[0-9]` or `[a-z]`.
+  - Specific ranges of digits or alphabets are supported, such as `[D-S]` or `[4-8]`.
+  - It is also possible to combine ranges within the same brackets, for example, `[f-sA-N6-8]`.
+- **Negation**: The `^` character can be used to negate characters or ranges within character classes. For example, `[^aeiou]` matches any character that is not a vowel.
+- **Repetition:** The `{m}` syntax allows you to specify that a character or group must appear exactly `m` times.
+
+  - For example, `a{3}` matches exactly three `a` characters in a row, so it would match `aaa` but not `aa` or `aaaa`.
+  - `\d{3}` matches exactly three digits, such as `123` or `456`.
+
+- **Meta Character Support**:
+  - `\w`: ANY ONE word character. For ASCII, word characters are `[a-zA-Z0-9_]`
+  - `\W`: ANY ONE **non**-word character. For ASCII, word characters are `[a-zA-Z0-9_]`
+  - `\d`: ANY ONE digit character. Digits are `[0-9]` for digits
+  - `\D`: ANY ONE **non**-digit character. Digits are `[0-9]` for digits
+  - `\s`: ANY ONE space character. For ASCII, whitespace characters are `[\n\r\t\v\f]`
+  - `\S`: ANY ONE **non**-space character. For ASCII, whitespace characters are `[\n\r\t\v\f]`
 
 For more details, you can visit this amazing [ZK Regex Tools](https://zkregex.com/min_dfa) website.
+
+### Limitations
+
+The regular expressions supported by the zk-regex compiler have the following limitations:
+
+- Regular expressions that, when converted to DFA, have multiple accepting states are **not** supported.
+- Regular expressions that, when converted to DFA (Deterministic Finite
+  Automaton), include transitions to the initial state are **not** supported such as:
+  - `*`: zero or more (0+), e.g., [0-9]\* matches zero or more digits. It accepts all those in [0-9]+ plus the empty string.
+  - `?`: zero or one (optional), e.g., [+-]? matches an optional "+", "-", or an empty string.
+- Laziness or _Curb Greediness for Repetition Operators_ are **not** supported
+  - `*?`, `+?`, `??`, `{m,n}?`, `{m,}?`
+- Position Anchors (does not match character, but position such as start-of-line, end-of-line, start-of-word and end-of-word) are **not** supported.
 
 ## ZK Regex Workflow
 
