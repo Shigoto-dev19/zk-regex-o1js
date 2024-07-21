@@ -10,15 +10,72 @@ The innovation was originally developed for [zk-email-verify](https://github.com
 
 By leveraging ZK Regex, developers can securely verify the presence of specific text patterns without compromising data privacy, opening the door to a wide range of use cases such as secure messaging, confidential document validation, and more.
 
-## How to use
+## How to install the CLI
 
-1. Start by providing a raw or parsed (expanded) regex pattern, then execute the following command:
+```sh
+npm install -g o1js-regex-cli
+```
+
+## How to confirm successful installation:
+
+```sh
+zk-regex --version
+```
+
+or
+
+```sh
+zkr --version
+```
+
+### How to update the ZK Regex CLI
+
+```sh
+npm update -g o1js-regex-cli
+```
+
+## How to display help
+
+```sh
+zk-regex --help
+```
+
+![alt text](./images/cli-help.png)
+
+## How to use CLI to write or append o1js regex circuits directly into a TS File
+
+Start by providing a raw regex pattern and specifying the `--filePath` option:
+
+```sh
+zk-regex <regexPattern> [options] --filePath <path> --functionName <name>
+```
+
+- **Note:** When using the `--filePath` option, you must also provide the `--functionName` option. This ensures that the compiled regex circuit is given a specific function name within the TypeScript file.
+
+### File Handling:
+
+- If the _file_ specified by `--filePath` does not exist:
+  - The CLI will create the file.
+  - An import statement for the required types (`Bool`, `Field`, `UInt8` from `o1js`) will be added at the top of the file.
+  - The compiled regex circuit will be written to the file.
+- If the file specified by --filePath exists:
+  - The compiled regex circuit will be appended to the existing file.
+
+### Example Command:
+
+```sh
+zk-regex '(a|b)c' --functionName myRegexFunction --filePath ./src/regexCircuits.ts
+```
+
+This command will append the compiled regex circuit for the pattern `(a|b)c `to `./src/regexCircuits.ts` with the function name `myRegexFunction`.
+
+## How to use manually
+
+1. Provide a raw or parsed (expanded) regex pattern along with the desired options as described in the CLI documentation, then execute the following command:
 
    ```sh
-   npm run zk-regex '<regexPattern>'
+    zk-regex <regexPattern> [options]
    ```
-
-   **NOTE:** `countEnabled` and `substringEnabled` arguments are set to **false** by default.
 
 2. In your TypeScript file, import the necessary modules at the top:
 
@@ -42,34 +99,58 @@ Below is a screenshot depicting how a ZK Regex circuit in `o1js` appears upon su
 
 ## Compiler Options
 
-### Arguments
+1.  `--count`: A boolean option that is set to **false** by default.
 
-1. `countEnabled`: A boolean argument that is set to **false** by default.
+    - If `--count` is not used, the compiled circuit will have a **Bool** output, signifying whether the input matches the regex pattern.
 
-   - If `countEnabled` is **false**, the compiled circuit will have a **Bool** output, signifying whether the input matches the regex pattern.
+      - Example: For a regex `Hello [a-z]+!`, the input `Hello world!` will return `Bool(true)`, whereas the input `Hello there` will return `Bool(false)` because the exclamation mark `!` is missing at the end of the input.
 
-     - Example: For a regex `Hello [a-z]+!`, the input `Hello world!` will return `Bool(true)`, whereas the input `Hello there` will return `Bool(false)` because the exclamation mark `!` is missing at the end of the input.
+    - If `--count` is used, the compiled circuit will return a **Field** output, signifying the number of matching patterns according to the regex.
+      - Example: For a regex `[0-9]+`, the input `I saw 279 ants and 1 elephant` will return `Field(4)` because it contains 4 numbers. Whereas an input like `Cheese` will return `Field(0)` because there are no digits in the input, which can also invalidate the input like `Bool(false)`.
 
-   - If `countEnabled` is **true**, the compiled circuit will return a **Field** output, signifying the number of matching patterns according to the regex.
-     - Example: For a regex `([0-9])+`, the input `I saw 279 ants and 1 elephant` will return `Field(4)` because it contains 4 numbers. Whereas an input like `Cheese` will return `Field(0)` because there are no digits in the input, which can also invalidate the input like `Bool(false)`.
+2.  For a defined regex, there are two alternative variadic options to reveal its substring patterns: `--revealTransitions` and `--revealSubpatterns`.
 
-2. `substringEnabled`: A boolean argument that is set to **false** by default.
+    - **Warning** Only one of these options can be used at a time. Using both will result in an error, as they are mutually exclusive choices for revealing patterns.
 
-   - If `substringEnabled` is **false**, the compiled circuit will only return `Field` or `Bool` output based on `countEnabled` arguments. In other words, the regex circuit will solely validate given an input.
+    - If neither reveal option is used, the compiled circuit will return either `Field` or `Bool` output based on the `--count` option. This means the regex circuit will only validate the input without revealing any sub-patterns.
 
-   - If `substringEnabled` is **true**, the compiled circuit will reveal parts of the input following regex sub-pattern(s) or directly following the given min-DFA transitions.
+    - If one of the reveal options is used, the compiled circuit will reveal parts of the input based on the specified regex sub-pattern(s) or the provided min-DFA transitions.
 
-     - **Sub-patterns**:
+    - **Notes:**
 
-       - Sub-patterns are parts of the regex input that get parsed, extracting the respective transitions to be revealed.
-       - **NOTE:** The compiler will complain if a part regex is not included in the entire regex.
-       - **Example:** `npm run zk-regex '(black|white)+' '["black"]'` black is included in the entire regex `(black|white)+` but it will throw an error if a part regex is not included or of the wrong type such as `["yellow"]` or `black`.
-       - Following the color example, it is also possible to separate part regex for better flexibility such as giving `["black", "white"]` as opposed to `["(black|white)"]` that reveals everything attached.
+      - The reveal substring feature is particularly useful for occurrence matching with the `+` (one or more) operator. This feature allows for meaningful use cases in various circuits by fetching the matching values. For instance, it can be used to match and reveal a series of base64 characters or to extract an abstract number from a match like `[0-9]+`.
+      - While matching specific patterns such as `white` or `Human` might seem less practical, these examples are provided to illustrate how to effectively use the reveal options.
 
-     - **Transitions**:
-       - Transitions are the raw inputs behind revealing substring for an input.
-       - **Warning:** Opposed to sub-patterns, the compiler won't complain if you give it any transition array, it will only complain if the type of the transitions is different than `[number, number][][]`.
-       - Transitions are more straightforward if you know what you are doing following the DFA visualization; otherwise, use sub-patterns.
+    - **Sub-patterns:** `--revealSubpatterns` or `-s`
+
+      - Sub-patterns refer to specific parts of the regex input that are parsed to extract and reveal their respective transitions.
+
+      - **Warning:** The compiler will throw an error if a sub-pattern is not included in the entire regex or if the specified sub-pattern does not match the correct type.
+
+      - **Example:** For the command `zk-regex '(Human|Robot)+' --revealSubpatterns Human`, `Human` is a valid sub-pattern within the regex `(Human|Robot)+`. However, the compiler will raise an error if the sub-pattern specified is not present in the main regex or if it does not match, such as using `Humanoid` or `human` instead of `Human`.
+
+      - Additionally, sub-patterns can be specified separately for more flexibility. For example, using `zk-regex '(Human|Robot)+' --revealSubpatterns Human Robot` allows you to reveal specific sub-patterns, as opposed to revealing everything attached with `zk-regex '(Human|Robot)' --revealSubpatterns '(Human|Robot)'`.
+
+      - When using the `--revealSubpatterns` option, the output of the circuit includes a key to respect the scattering of revealed sub-patterns.
+
+      - In practice, if you reveal a single sub-pattern, you can access it with `reveal[0]` within the zkApp when using the regex circuit.
+
+    - **Transitions:** `--revealTransitions` or `-t`
+
+      - Transitions represent the underlying raw inputs used to reveal substrings in a regex match.
+
+      - The `--revealTransitions` option in the CLI allows you to specify a variadic list of transition pairs in a special format.
+
+        - **Example Command:** `zk-regex [a-z]+ --revealTransitions [0,1],[1,1]`
+
+      - **Warning:**
+
+        - The compiler will issue a warning if you provide a transition array that contains pairs not included in the full regex transition.
+        - The warning will occur if the format of the transitions does not match `[number, number],[number, number],...`.
+
+      - For greater flexibility, similar to subpatterns, you can specify multiple series of transition pairs, such as `[0,1],[1,1] [2,3],[3,4]`.
+
+      - Working with transitions can be more straightforward if you understand the DFA (Deterministic Finite Automaton) visualization. Otherwise, it is recommended to use sub-patterns for ease of use.
 
 ### Enabling Substring Walkthrough
 
@@ -80,17 +161,17 @@ Below is a screenshot depicting how a ZK Regex circuit in `o1js` appears upon su
 
 - In this example, we want to reveal the dynamic substring knowing that it's abstract given the repetition pattern.
 
-- Entering the **sub-pattern** is quite straightforward, and giving the input `'["[A-Z][a-z]+"]'` solves the issue easily.
+- Entering the **sub-pattern** is quite straightforward, and giving the input `[A-Z][a-z]+` solves the issue easily.
 
-  - Command: `npm run zk-regex 'name: [A-Z][a-z]+' '["[A-Z][a-z]+"]'`
+  - Command: `zk-regex 'name: [A-Z][a-z]+' -s [A-Z][a-z]+`
 
 - As with transitions, you should first use this amazing [min-DFA visualizer](https://zkregex.com/min_dfa?regex=bmFtZTogKEF8QnxDfER8RXxGfEd8SHxJfEp8S3xMfE18TnxPfFB8UXxSfFN8VHxVfFZ8V3xYfFl8WikoYXxifGN8ZHxlfGZ8Z3xofGl8anxrfGx8bXxufG98cHxxfHJ8c3x0fHV8dnx3fHh8eXx6KSs=)
   ![alt text](./images/min-dfa-example.png)
 
 - You can see in the graph above that the transitions containing the inputs `[A-Z]` and `[a-z]+` are `8 to 1`, `1 to 2`, and `2 to 2`.
-  - Hence the transitions input `[[[8,1],[1,2],[2,2]]]` also reveals the name starting with a capital letter.
-  - Command: `npm run zk-regex 'name: [A-Z][a-z]+' '[[[8,1],[1,2],[2,2]]]'`
-  - **NOTE:** Separation is also possible by reorganizing the transitions sub-array, such as `[[[8,1]],[[1,2],[2,2]]]`, which reveals the first capital letter and the rest lowercase letters separately.
+  - Hence the transitions input `[8,1],[1,2],[2,2]` also reveals the name starting with a capital letter.
+  - Command: `zk-regex 'name: [A-Z][a-z]+' -t [8,1],[1,2],[2,2]`
+  - **NOTE:** Separation is also possible by reorganizing the transitions sub-array, such as `[8,1] [1,2],[2,2]`, which reveals the first capital letter and the rest lowercase letters separately.
 
 ### Options Graph
 
