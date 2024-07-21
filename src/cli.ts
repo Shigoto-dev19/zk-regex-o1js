@@ -9,8 +9,11 @@ const program = new Command();
 program
   .version('0.1.0')
   .description('CLI for ZK Regex Compiler in o1js')
-  .argument('<rawRegex>', 'Raw regex pattern to compile')
-  .option('-c, --count', 'Enable count for match regex pattern')
+  .argument('<regexPattern>', 'Raw regex pattern to compile')
+  .option(
+    '-c, --count',
+    'Count the occurrences of the pattern in the input according to the regex pattern, replacing the default boolean matcher that only checks if the input matches the pattern or not.'
+  )
   .option('-t, --revealTransitions <values...>', 'State transitions to reveal')
   .option('-s, --revealSubpatterns <values...>', 'Regex subpatterns to reveal')
   .option(
@@ -31,7 +34,7 @@ program
 
     let revealInput: string[] | [number, number][][] | undefined = undefined;
 
-    // Ensure only one of --revealTransitions or --revealSubpatterns is provided
+    // Ensure only one of --revealTransitions or --revealSubpatterns options is provided
     if (options.revealTransitions && options.revealSubpatterns) {
       console.error(
         'Error: You can only use either --revealTransitions or --revealSubpatterns, not both!'
@@ -43,7 +46,7 @@ program
     const logsEnabled = options.filePath ? false : true;
     const compiler = RegexCompiler.initialize(rawRegex, logsEnabled);
 
-    // Set transitionInput and revealEnabled based on the provided option
+    // Set revealInput and revealEnabled based on the provided option
     if (options.revealTransitions) {
       revealEnabled = true;
       revealInput = parseTransitions(options.revealTransitions);
@@ -57,7 +60,7 @@ program
       revealInput = options.revealSubpatterns;
     }
 
-    // Print the regex circuit based on the options
+    // Generate the regex circuit string based on the options
     compiler.generateStringRegexCircuit(
       countEnabled,
       revealEnabled,
@@ -113,7 +116,23 @@ program
 // Parse the command-line arguments
 program.parse(process.argv);
 
-// Function to parse input strings into an array of arrays of number pairs
+/**
+ * Parses a collection of state transition strings into a 2-dimensional array of transition pairs.
+ *
+ * @param inputArray - The array of input strings to parse.
+ * @returns The parsed array of arrays of number pairs.
+ * @throws Throws an error if the format of the input string is invalid.
+ *
+ * @example
+ * // Example input
+ * const input = ['[0,1],[1,2]', '[2,3],[3,4]'];
+ *
+ * // Example output
+ * const output = [
+ *   [[0, 1], [1, 2]],
+ *   [[2, 3], [3, 4]]
+ * ];
+ */
 function parseTransitions(inputArray: string[]): [number, number][][] {
   return inputArray.map((str: string) => {
     // Remove spaces and ensure the string matches the expected format
