@@ -1,18 +1,30 @@
 {
   "name": "zk-regex-o1js",
-  "version": "0.1.0",
-  "description": "",
+  "version": "0.2.0",
+  "description": "CLI tool for compiling regex patterns into o1js ZK circuits",
   "author": "Shigoto-dev19",
   "license": "Apache-2.0",
   "keywords": [
-    "mina-zkapp",
-    "mina-zk-app",
-    "mina-dapp",
-    "zkapp"
+    "mina",
+    "blockhain",
+    "zkapp",
+    "zero knowledge",
+    "o1js",
+    "regex",
+    "compiler"
   ],
   "type": "module",
-  "main": "build/src/index.js",
-  "types": "build/src/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Shigoto-dev19/zk-regex-o1js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Shigoto-dev19/zk-regex-o1js/issues"
+  },
+  "bin": {
+    "zk-regex": "./build/src/cli.js",
+    "zkr": "./build/src/cli.js"
+  },
   "scripts": {
     "build": "tsc",
     "buildw": "tsc --watch",
@@ -21,7 +33,6 @@
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "testw": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "lint": "npx eslint src/* --fix",
-    "example": "npm run zk-regex [a-z]+",
     "zkapp": "npm run build && node build/src/zkapp.js"
   },
   "devDependencies": {

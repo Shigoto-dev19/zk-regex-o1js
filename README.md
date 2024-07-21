@@ -1,4 +1,4 @@
-## Description
+o## Description
 
 This library compiles zk-regex circuits in [o1js](https://github.com/o1-labs/o1js) to prove/verify zero-knowledge regular expressions on the Mina blockchain.
 
@@ -13,7 +13,7 @@ By leveraging ZK Regex, developers can securely verify the presence of specific 
 ## How to install the CLI
 
 ```sh
-npm install -g o1js-regex-cli
+npm install -g zk-regex-o1js
 ```
 
 ## How to confirm successful installation:
@@ -31,7 +31,7 @@ zkr --version
 ### How to update the ZK Regex CLI
 
 ```sh
-npm update -g o1js-regex-cli
+npm update -g zk-regex-o1js
 ```
 
 ## How to display help

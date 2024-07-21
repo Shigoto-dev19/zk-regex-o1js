@@ -1,3 +1,4 @@
+#! /usr/bin/env node
 import { assert } from 'o1js';
 import { RegexCompiler } from './compiler.js';
 import { Command } from 'commander';
@@ -7,7 +8,7 @@ import { appendFileSync, existsSync, writeFileSync } from 'fs';
 const program = new Command();
 
 program
-  .version('0.1.0')
+  .version('0.2.0')
   .description('CLI for ZK Regex Compiler in o1js')
   .argument('<regexPattern>', 'Raw regex pattern to compile')
   .option(
