@@ -1,4 +1,4 @@
-o## Description
+## Description
 
 This library compiles zk-regex circuits in [o1js](https://github.com/o1-labs/o1js) to prove/verify zero-knowledge regular expressions on the Mina blockchain.
 
